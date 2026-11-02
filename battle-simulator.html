@@ -1,0 +1,2002 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Battle Simulator</title>
+<style>
+:root{
+  --paper:#efe6cf; --paper2:#e4d8b8; --panel:#f5efdc; --ink:#2f2a22; --ink2:#62584a; --rule:#cbbb92;
+  --accent:#7a2e1f; --btn:#e3d4ae; --btnh:#d5c393; --sea:#55707e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#d8cba8;color:var(--ink);
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;font-size:14px}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+header{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 14px;background:var(--paper2);border-bottom:1px solid var(--rule)}
+header h1{font-size:18px;margin:0 6px 0 0;letter-spacing:.05em;font-variant:small-caps;font-weight:600;white-space:nowrap}
+header .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+select,input[type=text],input[type=number]{font:inherit;background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:4px 6px;color:var(--ink)}
+input[type=number]{width:64px}
+button{font:inherit;background:var(--btn);border:1px solid #b9a678;border-radius:4px;padding:5px 11px;cursor:pointer;color:var(--ink)}
+button:hover{background:var(--btnh)}
+button.primary{background:#7a2e1f;color:#f7efdc;border-color:#5d2216}
+button.primary:hover{background:#8e3a29}
+input[type=range]{accent-color:#7a2e1f}
+main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 350px;min-height:0}
+#stage{position:relative;overflow:hidden;background:var(--sea);touch-action:none}
+#view{display:block;width:100%;height:100%;cursor:grab}
+#view.paint{cursor:crosshair}
+aside{overflow:auto;background:var(--panel);border-left:1px solid var(--rule);padding:6px 14px 40px}
+aside section{border-bottom:1px solid var(--rule);padding:10px 0}
+aside h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 8px;font-weight:600}
+.small{font-size:12px;color:var(--ink2)}
+.battleinfo h3{margin:0 0 2px;font-size:17px}
+.battleinfo p{margin:6px 0;line-height:1.4}
+.badge{display:inline-block;background:#e9dcb6;border:1px solid var(--rule);border-radius:10px;padding:1px 8px;font-size:12px}
+.side{border:1px solid var(--rule);border-radius:6px;padding:8px;margin-bottom:8px;background:#fbf7ea}
+.side .row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.side input[type=text]{flex:1;min-width:0}
+.side input[type=color]{width:32px;height:28px;padding:0;border:1px solid var(--rule);background:none}
+.side input[type=range]{flex:1;min-width:0}
+.counts{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;text-align:center;font-size:11px;color:var(--ink2)}
+.counts b{display:block;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}
+.toggles label{display:inline-flex;align-items:center;gap:4px;margin:0 10px 6px 0;white-space:nowrap}
+.legend{display:grid;grid-template-columns:1fr;gap:3px}
+.legend div{display:flex;gap:6px;align-items:center;font-size:12px}
+.legend i{width:16px;height:12px;border:1px solid rgba(0,0,0,.25);flex:none;border-radius:2px}
+.legend span.m{color:var(--ink2);margin-left:auto;font-size:11px;text-align:right}
+#log{max-height:260px;overflow:auto;font-size:12.5px;line-height:1.35}
+#log div{padding:3px 0;border-bottom:1px dotted #d9cba3}
+#log time{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:6px}
+#log .phase{font-weight:600;color:var(--accent)}
+#clock{position:absolute;left:10px;top:10px;background:rgba(245,239,220,.92);border:1px solid var(--rule);border-radius:6px;padding:6px 10px;pointer-events:none;max-width:70%}
+#clock .d{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+#clock .p{font-size:12px;color:var(--ink2)}
+#banner{position:absolute;left:50%;top:18%;transform:translateX(-50%);text-align:center;background:rgba(245,239,220,.94);border:1px solid var(--rule);border-radius:8px;padding:10px 22px;pointer-events:none;opacity:0;transition:opacity .6s;max-width:90%}
+#banner.show{opacity:1}
+#banner b{display:block;font-size:20px;font-variant:small-caps;letter-spacing:.04em}
+#zoomCtl{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:4px}
+#zoomCtl button{width:34px;height:34px;padding:0;font-size:17px;background:rgba(245,239,220,.92)}
+#hint{position:absolute;left:10px;bottom:10px;font-size:11.5px;color:#f3ead2;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
+#tip{position:absolute;pointer-events:none;background:rgba(250,246,232,.97);border:1px solid var(--rule);border-radius:6px;padding:7px 9px;font-size:12px;line-height:1.4;min-width:190px;box-shadow:0 2px 8px rgba(0,0,0,.25);display:none;z-index:5}
+#tip b{font-size:13px}
+#modal{position:fixed;inset:0;background:rgba(40,32,20,.55);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+#modal .card{background:var(--panel);border:1px solid var(--rule);border-radius:8px;max-width:680px;width:100%;max-height:90vh;overflow:auto;padding:18px 20px}
+#modal h2{margin:0 0 4px;font-variant:small-caps}
+#modal table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+#modal th,#modal td{border-bottom:1px solid var(--rule);padding:5px 6px;text-align:right}
+#modal th:first-child,#modal td:first-child{text-align:left}
+#err{position:fixed;left:0;right:0;bottom:0;background:#7a2e1f;color:#fff;font:12px monospace;padding:6px;display:none;z-index:50;white-space:pre-wrap}
+@media (max-width:820px){
+  #app{height:auto;min-height:100dvh}
+  main{grid-template-columns:minmax(0,1fr);grid-template-rows:60vh auto}
+  #stage,aside{min-width:0;max-width:100vw}
+  aside{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  header h1{font-size:16px}
+  #hint{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Battle Simulator</h1>
+    <div class="grp">
+      <select id="preset" aria-label="Battle preset"></select>
+    </div>
+    <div class="grp">
+      <button id="btnStart" class="primary">Start</button>
+      <button id="btnPause">Pause</button>
+      <button id="btnReset">Reset</button>
+    </div>
+    <div class="grp">
+      <label for="speed" class="small">Speed</label>
+      <input id="speed" type="range" min="0.5" max="4" step="0.5" value="1" style="width:100px">
+      <span id="speedVal" class="small">1×</span>
+    </div>
+  </header>
+  <main>
+    <div id="stage">
+      <canvas id="view"></canvas>
+      <div id="clock"><div class="d" id="clockDate">—</div><div class="p" id="clockPhase"></div></div>
+      <div id="banner"><b id="bannerTitle"></b><span id="bannerSub" class="small"></span></div>
+      <div id="zoomCtl"><button id="zIn" title="Zoom in">+</button><button id="zOut" title="Zoom out">−</button><button id="zFit" title="Fit battlefield">⤢</button></div>
+      <div id="hint">Drag to pan · scroll / pinch to zoom · hover or tap a soldier for details</div>
+      <div id="tip"></div>
+    </div>
+    <aside>
+      <section class="battleinfo" id="info"></section>
+      <section><h2>Armies</h2><div id="sides"></div>
+        <div class="small">Changing a slider rescales every unit of that side proportionally and resets the battle.</div></section>
+      <section><h2>Display</h2>
+        <div class="toggles">
+          <label><input type="checkbox" id="tEffects" checked> Effects</label>
+          <label><input type="checkbox" id="tTerritory" checked> Territory &amp; front</label>
+          <label><input type="checkbox" id="tHeat"> Heatmap</label>
+          <label><input type="checkbox" id="tTrails"> Trails</label>
+          <label><input type="checkbox" id="tLabels" checked> Unit labels</label>
+          <label><input type="checkbox" id="tFollow" checked> Auto camera</label>
+        </div></section>
+      <section><h2>Terrain</h2><div class="legend" id="legend"></div>
+        <div style="margin-top:10px" class="toggles">
+          <label><input type="checkbox" id="paintMode"> Paint terrain</label>
+          <select id="paintType" aria-label="Terrain to paint"></select>
+          <label class="small">Brush <input type="range" id="brush" min="1" max="5" value="2" style="width:70px"></label>
+        </div>
+        <div class="small">Painting works in any battle; it persists through Reset and is discarded when you switch presets.</div></section>
+      <section><h2>Event log</h2><div id="log"></div></section>
+    </aside>
+  </main>
+</div>
+<div id="modal"><div class="card" id="modalCard"></div></div>
+<div id="err"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script>
+'use strict';
+window.addEventListener('error', e => { const el = document.getElementById('err'); el.style.display = 'block'; el.textContent += (e.message || e) + ' @' + (e.lineno || '') + '\n'; });
+/* =====================================================================
+   1. CONFIG — global simulation rules. Tune here.
+   Distances are world pixels; times are simulated seconds.
+   ===================================================================== */
+const { Engine, Bodies, Body, Composite } = Matter;
+
+const CONFIG = {
+  CELL: 20,                 // terrain grid cell size
+  UNIT_R: 4.2,              // soldier sphere radius
+  BASE_SPEED: 0.55,         // px per physics step (60 Hz) on open ground ≈ 33 px/s
+  STEP: 1000 / 60,          // fixed physics step (ms)
+  MAX_STEPS_PER_FRAME: 6,   // cap so high speed settings degrade gracefully
+  THINK_MIN: 0.3,           // each soldier re-plans every 0.30–0.55 s (staggered, not every frame)
+  THINK_JITTER: 0.25,
+  HASH: 64,                 // spatial-hash bucket size for target finding
+  SPACING: 11,              // formation spacing
+  TRAIL_STEP: 4,            // breadcrumb spacing for column formations
+
+  // --- health / injury ---
+  INJURED_HEALTH: 75,       // health at or below this = INJURED
+  INJURED_SPEED: 0.6,       // injured move at 60 %
+  INJURED_ACC: 0.6,         // …and shoot at 60 % accuracy
+  INJURED_RANGE: 0.85,
+  NONLETHAL_MIN: 25, NONLETHAL_MAX: 55, // damage from a non-lethal hit
+  DROP_WEAPON_CHANCE: 0.12, // a wounded soldier may lose his weapon
+
+  // --- shooting ---
+  RANGE_FALLOFF: 0.75,      // hit chance × (1 − 0.75·(d/range)²)
+  ELEV_ACC_BONUS: 0.3,      // +30 % accuracy per elevation level above target
+  ELEV_RANGE_BONUS: 0.15,   // +15 % range per elevation level above target
+  UPHILL_PENALTY: 0.85,     // shooting up at higher ground
+  MOVING_ACC: 0.65,         // shooter firing on the move
+  MOVING_TARGET: 0.9,
+  CLOSE_ASSAULT: 30,        // inside this distance, assault troops (flamethrowers, satchel
+  CLOSE_ASSAULT_COVER: 0.3, //   charges) negate 70 % of a target's cover
+
+  // --- melee ---
+  MELEE_RANGE: 13, MELEE_INTERVAL: 1.1, MELEE_HIT: 0.35,
+
+  // --- morale ---
+  SUPPRESS_TIME: 2.0,       // being shot at "suppresses" for 2 s (triggers cover seeking)
+  MORALE_RECOVER: 3,        // per second when not suppressed
+  MORALE_MISS: 1.5, MORALE_HIT: 12, MORALE_NEAR_HIT: 4, MORALE_NEAR_DEATH: 6,
+  ROUT_RECOVER: 55,         // routing soldiers rally once morale climbs back above this
+
+  // --- misc behaviour ---
+  COVER_SEEK_RADIUS: 70, COVER_HOLD: 2.5,
+  PICKUP_RADIUS: 150, PICKUP_DIST: 9,
+  INFL_CELL: 40, INFL_RADIUS: 3,   // territory / heat grid
+  MAX_PARTICLES: 1600, MAX_TRACERS: 400, MAX_DROPS: 600,
+};
+
+/* =====================================================================
+   2. TERRAIN TYPES — movement, cover and line-of-sight modifiers.
+   speed: movement multiplier (0 = impassable static body)
+   cover: fraction of incoming hits negated
+   los:   line-of-sight opacity per cell crossed (sum ≥ 1 blocks the shot)
+   elev:  elevation level (accuracy/range bonus when shooting downhill)
+   keepElev: drawn on top of a hill, the cell keeps the hill's elevation
+   ===================================================================== */
+const TERRAIN = {
+  open:     { name: 'Open ground',            color: '#c9c09a', speed: 1.00, cover: 0.00, los: 0.00, elev: 0 },
+  road:     { name: 'Road',                   color: '#b9a37c', speed: 1.15, cover: 0.00, los: 0.00, elev: 0 },
+  hill:     { name: 'High ground / hill',     color: '#a6956a', speed: 0.75, cover: 0.10, los: 0.00, elev: 1 },
+  peak:     { name: 'Summit (dominant height)', color: '#7c6e52', speed: 0.50, cover: 0.30, los: 0.00, elev: 2 },
+  forest:   { name: 'Forest / cover',         color: '#6e7d4c', speed: 0.65, cover: 0.45, los: 0.22, elev: 0, keepElev: true },
+  wall:     { name: 'Stone wall',             color: '#8d887c', speed: 0.45, cover: 0.65, los: 0.10, elev: 0, keepElev: true },
+  town:     { name: 'Buildings',              color: '#9b8467', speed: 0.70, cover: 0.50, los: 0.45, elev: 0, keepElev: true },
+  water:    { name: 'Water / river',          color: '#6d8c9c', speed: 0.00, cover: 0.00, los: 0.00, elev: 0, impassable: true },
+  bridge:   { name: 'Bridge',                 color: '#8f6e48', speed: 0.80, cover: 0.00, los: 0.00, elev: 0 },
+  sand:     { name: 'Sand / mud',             color: '#8a8170', speed: 0.45, cover: 0.05, los: 0.00, elev: 0 },
+  rough:    { name: 'Rocky broken ground',    color: '#857a66', speed: 0.60, cover: 0.40, los: 0.15, elev: 1 },
+  crater:   { name: 'Shell craters',          color: '#6f675a', speed: 0.80, cover: 0.35, los: 0.00, elev: 0, keepElev: true },
+  airfield: { name: 'Airfield',               color: '#aaa38e', speed: 1.10, cover: 0.00, los: 0.00, elev: 0 },
+  bunker:   { name: 'Fortification / bunker', color: '#4c4840', speed: 0.50, cover: 0.85, los: 0.50, elev: 0, keepElev: true },
+};
+const TKEYS = Object.keys(TERRAIN);
+const TI = Object.fromEntries(TKEYS.map((k, i) => [k, i]));
+const TL = TKEYS.map(k => Object.assign({ key: k }, TERRAIN[k]));
+const CRATERABLE = new Set([TI.open, TI.sand, TI.airfield, TI.road]);
+
+/* =====================================================================
+   3. GEOMETRY + PRESET-BUILDING HELPERS
+   ===================================================================== */
+function rng(seed) { // mulberry32 — deterministic terrain generation
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const hash01 = i => (((i * 2654435761) ^ (i >>> 7) * 40503) >>> 0) / 4294967296;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rand = (a, b) => a + Math.random() * (b - a);
+
+function pointInPoly(x, y, pts) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i], [xj, yj] = pts[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function distToSeg(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+  let t = L ? ((px - ax) * dx + (py - ay) * dy) / L : 0;
+  t = clamp(t, 0, 1);
+  return Math.hypot(px - ax - t * dx, py - ay - t * dy);
+}
+function distToPolyline(px, py, pts) {
+  let m = Infinity;
+  for (let i = 0; i < pts.length - 1; i++) m = Math.min(m, distToSeg(px, py, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]));
+  return m;
+}
+function regionBBox(reg) {
+  if (reg.rect) { const [x, y, w, h] = reg.rect; return [x, y, x + w, y + h]; }
+  if (reg.circle) { const [x, y, r] = reg.circle; return [x - r, y - r, x + r, y + r]; }
+  const pts = reg.poly; let a = [1e9, 1e9, -1e9, -1e9];
+  for (const [x, y] of pts) a = [Math.min(a[0], x), Math.min(a[1], y), Math.max(a[2], x), Math.max(a[3], y)];
+  return a;
+}
+function inRegion(x, y, reg) {
+  if (reg.rect) { const [rx, ry, w, h] = reg.rect; return x >= rx && x <= rx + w && y >= ry && y <= ry + h; }
+  if (reg.circle) { const [cx, cy, r] = reg.circle; return (x - cx) ** 2 + (y - cy) ** 2 <= r * r; }
+  return pointInPoly(x, y, reg.poly);
+}
+function regionPoint(r, reg) {
+  const bb = regionBBox(reg);
+  for (let k = 0; k < 200; k++) {
+    const x = bb[0] + r() * (bb[2] - bb[0]), y = bb[1] + r() * (bb[3] - bb[1]);
+    if (inRegion(x, y, reg)) return [x, y];
+  }
+  return [(bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2];
+}
+// n random circular patches of a terrain type inside a region (optionally clipped to a polygon)
+function scatter(type, seed, n, reg, rMin, rMax, within) {
+  const r = rng(seed), out = [];
+  for (let i = 0; i < n; i++) {
+    const [x, y] = regionPoint(r, reg);
+    if (within && !pointInPoly(x, y, within)) continue;
+    out.push({ type, circle: [x, y, rMin + r() * (rMax - rMin)] });
+  }
+  return out;
+}
+// Broken New England field walls running parallel to a road
+function wallsAlong(pts, offset, seg, gap, seed) {
+  const r = rng(seed), out = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
+    let s = r() * gap;
+    while (s < L) {
+      const e = Math.min(L, s + seg * (0.6 + r() * 0.8));
+      if (r() < 0.75) out.push({ type: 'wall', width: 12, line: [[x1 + ux * s + nx * offset, y1 + uy * s + ny * offset], [x1 + ux * e + nx * offset, y1 + uy * e + ny * offset]] });
+      s = e + gap * (0.5 + r());
+    }
+  }
+  return out;
+}
+function houses(seed, n, reg, size = 24) {
+  const r = rng(seed), out = [];
+  for (let i = 0; i < n; i++) { const [x, y] = regionPoint(r, reg); out.push({ type: 'town', rect: [x - size / 2, y - size / 2, size, size * 0.8] }); }
+  return out;
+}
+const pathFrom = (pts, x0, x1 = 1e9) => pts.filter(p => p[0] > x0 && p[0] <= x1);
+/* =====================================================================
+   4. PRESETS DATA — one object per battle. To add a battle, push another
+   object with the same shape onto PRESETS.
+
+   Troop strengths and casualties carry a source comment. Unit "stats"
+   (accuracy, fire interval…) are gameplay values tuned so aggregate loss
+   rates are plausible at the chosen scale; they are not historical data.
+
+   Group definition fields:
+     side, key, label, type (unitTypes key), men (real soldiers → spheres
+     = men / scale) or count (fixed spheres), at [x,y], formation
+     ('line'|'column'|'scatter'|'bunkers'), behavior ('hold'|'advance'|
+     'march'|'retreat'|'withdraw'|'skirmish'|'defend'|'hunt'), path,
+     backPath (column tail), facing, holdFireUntil, spawnAt, transitions,
+     rally, shadow (skirmishers shadow these enemy group keys), hunt.
+   ===================================================================== */
+const SRC = {
+  fischer: 'D. H. Fischer, Paul Revere\'s Ride (Oxford UP, 1994), appendices',
+  nps: 'U.S. National Park Service, Minute Man National Historical Park',
+  bartley: 'W. S. Bartley, Iwo Jima: Amphibious Epic (USMC Historical Branch, 1954)',
+  alexander: 'J. H. Alexander, Closing In: Marines in the Seizure of Iwo Jima (USMC History & Museums Div., 1994)',
+  burrell: 'R. S. Burrell, The Ghosts of Iwo Jima (Texas A&M UP, 2006)',
+};
+
+/* ---------------- Lexington & Concord ---------------- */
+const LEX_ROAD = [[500,700],[650,700],[800,690],[950,735],[1050,760],[1150,720],[1300,700],[1450,700],[1560,690],[1700,710],[1900,730],[2100,710],[2300,700],[2500,705],[2700,690],[2900,690]];
+
+const LEXINGTON = {
+  id: 'lexington',
+  name: 'Battles of Lexington and Concord',
+  date: 'April 19, 1775',
+  location: 'Middlesex County, Massachusetts Bay',
+  summary: 'British regulars marched from Boston to seize colonial military stores at Concord. A brief clash on Lexington Green at dawn was followed by a fight at Concord\'s North Bridge, then a running battle along the "Battle Road" as thousands of militia fired from walls, trees and houses on the retreating column until it reached Charlestown at dusk.',
+  scale: 5, // 1 sphere = 5 soldiers
+  world: { w: 3000, h: 1200 },
+  base: 'open',
+  smoke: 1.0, // black-powder smoke
+  sides: [
+    { name: 'British Regulars', color: '#b0352b' },
+    { name: 'Colonial Militia', color: '#33557f' },
+  ],
+  unitTypes: {
+    regular: { label: 'British regular (Brown Bess musket)', accuracy: 0.014, range: 105, fireInterval: 2.6,
+      ammo: 36, // standard cartridge box held 36 rounds (Fischer 1994); many ran low on the retreat
+      speed: 1.0, morale: 75, routAt: 12, melee: 1.4, lethality: 0.2, injuredRetreat: 0.3 },
+    militia: { label: 'Provincial militiaman (musket / fowling piece)', accuracy: 0.022, range: 110, fireInterval: 3.2,
+      ammo: 28, speed: 1.2, morale: 60, routAt: 25, melee: 0.5, lethality: 0.2, injuredRetreat: 0.6, seekCover: true },
+    cannon: { label: '6-pounder field gun & crew', accuracy: 0.5, range: 300, fireInterval: 10, ammo: 30,
+      speed: 0.8, morale: 90, routAt: 5, melee: 0, lethality: 0.12, splash: 20, injuredRetreat: 0, radius: 6.5 },
+  },
+  terrain: [
+    ...scatter('forest', 13, 12, { rect: [0, 0, 3000, 330] }, 50, 110),
+    ...scatter('forest', 14, 12, { rect: [0, 980, 3000, 220] }, 50, 110),
+    ...scatter('forest', 11, 18, { rect: [950, 470, 1850, 170] }, 35, 75),
+    ...scatter('forest', 12, 18, { rect: [950, 790, 1850, 190] }, 35, 80),
+    { type: 'forest', circle: [1080, 650, 70] }, { type: 'forest', circle: [1150, 840, 80] }, { type: 'forest', circle: [1010, 845, 55] }, // the "Bloody Curve", Lincoln
+    { type: 'hill', circle: [230, 200, 125] },  // Punkatasset Hill / muster field
+    { type: 'hill', poly: [[470,600],[700,590],[700,640],[470,650]] }, // ridge above Concord centre
+    { type: 'hill', circle: [1340, 610, 70] },  // Fiske Hill
+    { type: 'hill', circle: [1730, 620, 65] },  // high ground by Munroe Tavern (Percy's guns)
+    { type: 'hill', circle: [2870, 610, 80] },  // Charlestown heights
+    ...houses(21, 16, { rect: [500, 640, 170, 130] }),    // Concord
+    ...houses(22, 14, { rect: [1380, 600, 300, 200] }),   // Lexington
+    ...houses(23, 22, { rect: [2180, 600, 300, 200] }),   // Menotomy — house-to-house fighting
+    ...houses(24, 10, { rect: [2780, 640, 160, 120] }),   // Charlestown
+    { type: 'open', rect: [1450, 600, 110, 82] },         // Lexington Green (the common)
+    { type: 'town', rect: [1495, 606, 24, 22] },          // meetinghouse
+    ...wallsAlong(pathFrom(LEX_ROAD, 880), 58, 110, 70, 31),
+    ...wallsAlong(pathFrom(LEX_ROAD, 880), -58, 110, 70, 32),
+    { type: 'wall', width: 12, line: [[900, 620], [900, 500]] }, { type: 'wall', width: 12, line: [[1240, 780], [1240, 930]] },
+    { type: 'wall', width: 12, line: [[1900, 650], [1980, 540]] }, { type: 'wall', width: 12, line: [[2600, 760], [2620, 900]] },
+    { type: 'road', width: 16, line: LEX_ROAD },
+    { type: 'road', width: 14, line: [[560, 690], [520, 520], [470, 340], [445, 300]] },
+    { type: 'water', width: 34, line: [[430,0],[425,120],[410,250],[405,330],[395,430],[360,510],[280,560],[150,590],[0,610]] }, // Concord River
+    { type: 'bridge', width: 20, line: [[370, 300], [447, 300]] },  // North Bridge
+    { type: 'water', rect: [2960, 0, 40, 620] }, { type: 'water', rect: [2960, 760, 40, 440] }, // Charles / Mystic shore, Charlestown Neck
+  ],
+  zones: {
+    green: { name: 'Lexington Green', circle: [1505, 645, 80] },
+    bridge: { name: 'North Bridge', circle: [410, 300, 70] },
+    concord: { name: 'Concord', circle: [580, 700, 110] },
+    meriam: { name: "Meriam's Corner", circle: [900, 735, 60] },
+    menotomy: { name: 'Menotomy', circle: [2330, 700, 110] },
+    charlestown: { name: 'Charlestown', circle: [2850, 690, 120] },
+  },
+  phases: [
+    {
+      name: 'Lexington Green', view: [1250, 450, 800, 450],
+      clock: { start: [1775, 3, 19, 5, 0], minPerSec: 0.5 }, // dawn, ≈5 a.m. (Fischer 1994)
+      spawns: [
+        { side: 0, key: 'pitcairn', label: "Pitcairn's light infantry", type: 'regular',
+          men: 240, // six light companies under Maj. Pitcairn; commonly cited ~240 (estimates 200–400 incl. Smith's following column) — Fischer 1994
+          at: [1900, 728], formation: 'column', cols: 4, backPath: [[2200, 708], [2100, 710]],
+          path: [[1700, 708], [1585, 668]], behavior: 'advance', holdFireUntil: 11,
+          transitions: [
+            { when: { time: 6 }, to: { formation: 'line', rows: 2 } },
+            { when: { time: 30 }, to: { behavior: 'march', formation: 'column', path: [[1450, 700], [1300, 700], [1150, 720]] },
+              log: 'The regulars re-form, give three cheers and march on toward Concord.' }] },
+        { side: 1, key: 'parker', label: "Capt. Parker's Lexington company", type: 'militia',
+          men: 77, // 77 men per Fischer 1994 (depositions give 60–80)
+          at: [1500, 642], formation: 'line', rows: 2, facing: [1, 0.2], behavior: 'hold', holdFireUntil: 11, morale: 45,
+          rally: [1380, 520],
+          transitions: [{ when: { time: 9 }, to: { behavior: 'withdraw', path: [[1460, 590], [1390, 520]] },
+            log: 'Parker, seeing the odds, orders his men to disperse — slowly, and still holding their muskets.' }] },
+      ],
+      events: [
+        { t: 1, text: 'Dawn. Capt. John Parker\'s company stands on the Green as the regulars approach.' },
+        { t: 7, text: 'Pitcairn: "Lay down your arms, you damned rebels!"' },
+        { t: 11, text: 'A shot rings out — who fired it is still unknown. The regulars fire volleys without orders.' },
+      ],
+      end: { time: 40 },
+      note: 'Historically: 8 militiamen killed, 10 wounded; 1 British soldier wounded (Fischer 1994).',
+    },
+    {
+      name: 'North Bridge, Concord', view: [130, 120, 560, 380], clear: true,
+      clock: { start: [1775, 3, 19, 9, 30], minPerSec: 0.4 }, // ≈9:30 a.m.
+      spawns: [
+        { side: 0, key: 'laurie', label: "Capt. Laurie's light companies", type: 'regular',
+          men: 100, // three companies, ~95–115 men (Fischer 1994)
+          at: [482, 300], formation: 'line', rows: 3, facing: [-1, 0], behavior: 'hold', holdFireUntil: 4, rally: [540, 660],
+          transitions: [{ when: { lossFrac: 0.1, time: 22 }, to: { behavior: 'retreat', formation: 'column', path: [[470, 340], [520, 520], [560, 680]] },
+            log: 'The regulars at the bridge break and fall back on Concord.' }] },
+        { side: 1, key: 'concordMilitia', label: 'Concord, Acton & neighbouring militia', type: 'militia',
+          men: 400, // ≈400 (Fischer 1994; NPS); some accounts up to ~500
+          at: [300, 270], formation: 'column', cols: 2, backPath: [[200, 170], [250, 225]], behavior: 'advance', creep: 0.35, holdFireUntil: 5,
+          path: [[360, 300], [400, 300], [440, 300], [500, 305]], rally: [230, 200] },
+      ],
+      events: [
+        { t: 1, text: 'Militia on the muster field see smoke rising from Concord and march down on the bridge.' },
+        { t: 4, text: 'The regulars fire warning shots, then a ragged volley.' },
+        { t: 5, text: 'Maj. Buttrick: "Fire, for God\'s sake, fellow soldiers, fire!"' },
+      ],
+      end: { time: 38 },
+      note: 'Historically: 2 militia killed (Capt. Isaac Davis, Abner Hosmer); about 3 regulars killed and 9 wounded.',
+    },
+    {
+      name: 'The Battle Road', view: [700, 380, 2300, 640], clear: true,
+      clock: { start: [1775, 3, 19, 12, 30], minPerSec: 2.4 }, // column leaves Concord ≈ noon; Meriam's Corner ≈12:30
+      spawns: [
+        { side: 0, key: 'smith', label: "Lt. Col. Smith's column", type: 'regular',
+          men: 700, // Smith's expedition ≈700 grenadiers & light infantry (Fischer 1994; NPS)
+          at: [950, 735], formation: 'column', cols: 4, backPath: [[500, 700], [650, 700], [800, 690]],
+          path: pathFrom(LEX_ROAD, 950), behavior: 'retreat', rally: [2900, 690] },
+        { side: 0, key: 'percy', label: "Lord Percy's relief brigade", type: 'regular', spawnAt: 20,
+          men: 1000, // ≈1,000 men (Fischer 1994)
+          at: [1775, 705], formation: 'line', rows: 8, facing: [-1, 0], behavior: 'hold', rally: [2900, 690],
+          arriveText: 'Lord Percy\'s relief brigade (~1,000 men, two 6-pounders) deploys east of Lexington (historically ≈2:30 p.m.).',
+          transitions: [{ when: { groupPassed: { key: 'smith', x: 2050 } }, to: { behavior: 'retreat', formation: 'column', cols: 4, path: pathFrom(LEX_ROAD, 1800) },
+            log: 'Percy\'s brigade takes the rear guard and the whole force resumes the retreat.' }] },
+        { side: 0, key: 'guns', label: "Percy's two 6-pounders", type: 'cannon', spawnAt: 20,
+          count: 2, // two field guns (Fischer 1994) — fixed, not scaled
+          at: [1730, 625], formation: 'line', rows: 1, facing: [-1, 0], behavior: 'hold', rally: [2900, 690],
+          transitions: [{ when: { groupPassed: { key: 'smith', x: 2050 } }, to: { behavior: 'retreat', path: pathFrom(LEX_ROAD, 1800) } }] },
+        // Militia arrival schedule is a modeling abstraction. Total militia engaged during the day ≈3,960
+        // (Fischer 1994 tally; commonly cited 3,800–4,000); ≈3,500 are placed on the Battle Road here.
+        { side: 1, key: 'm1', label: "Militia at Meriam's Corner (north)", type: 'militia', men: 700, at: [900, 600], r: 110, formation: 'scatter', behavior: 'skirmish', shadow: ['smith', 'percy'] },
+        { side: 1, key: 'm2', label: "Militia at Meriam's Corner (south)", type: 'militia', men: 400, at: [920, 870], r: 100, formation: 'scatter', behavior: 'skirmish', shadow: ['smith', 'percy'] },
+        { side: 1, key: 'm3', label: 'Lincoln & Bedford companies', type: 'militia', men: 700, spawnAt: 12, at: [1220, 560], r: 110, formation: 'scatter', behavior: 'skirmish', shadow: ['smith', 'percy'],
+          arriveText: 'More companies pour in from Lincoln and Bedford; the "Bloody Curve" becomes a killing ground.' },
+        { side: 1, key: 'm4', label: "Woburn men & Parker's company", type: 'militia', men: 600, spawnAt: 30, at: [1420, 880], r: 110, formation: 'scatter', behavior: 'skirmish', shadow: ['smith', 'percy'],
+          arriveText: 'Woburn militia and Parker\'s Lexington company — "Parker\'s Revenge" — strike the column near Fiske Hill.' },
+        { side: 1, key: 'm5', label: 'Menotomy & Essex County militia', type: 'militia', men: 700, spawnAt: 55, at: [2250, 560], r: 140, formation: 'scatter', behavior: 'skirmish', shadow: ['percy', 'smith'],
+          arriveText: 'Fresh militia gather at Menotomy for the bloodiest fighting of the day.' },
+        { side: 1, key: 'm6', label: 'Cambridge, Charlestown & Roxbury men', type: 'militia', men: 400, spawnAt: 80, at: [2600, 860], r: 120, formation: 'scatter', behavior: 'skirmish', shadow: ['percy', 'smith'] },
+      ],
+      events: [
+        { t: 1, text: 'At Meriam\'s Corner the militia open fire on the retiring column from behind walls and barns.' },
+        { t: 60, text: 'Percy\'s ammunition wagons were captured earlier in Menotomy by a handful of older men — there is no resupply for the regulars.' },
+      ],
+      captures: [
+        { zone: 'green', side: 0, text: 'The exhausted column staggers back through Lexington.' },
+        { zone: 'menotomy', side: 0, text: 'House-to-house fighting in Menotomy.' },
+        { zone: 'charlestown', side: 0, text: 'The column reaches Charlestown, covered by the guns of HMS Somerset.' },
+      ],
+      end: { time: 240, reach: { side: 0, zone: 'charlestown', frac: 0.6, text: 'The British reach the safety of Charlestown at dusk.' } },
+      note: 'Historically the column reached Charlestown around dusk (≈7 p.m.). The siege of Boston began the next day.',
+    },
+  ],
+  historical: {
+    outcome: 'Colonial strategic victory. The stores at Concord were largely saved and the British were driven back to Boston, which the militia then besieged.',
+    casualties: [
+      { side: 0, killed: 73, wounded: 174, missing: 53, src: SRC.fischer }, // 73 killed, 174 wounded, 53 missing
+      { side: 1, killed: 49, wounded: 39, missing: 5, src: SRC.fischer },   // 49 killed, 39 wounded, 5 missing
+    ],
+    strengths: 'British ≈1,500–1,800 engaged (Smith ≈700 + Percy ≈1,000); militia ≈3,960 over the day (Fischer 1994).',
+  },
+};
+/* ---------------- Iwo Jima ---------------- */
+const ISLAND = [[260,1380],[200,1500],[230,1620],[330,1710],[470,1720],[580,1640],[680,1520],[820,1400],[980,1280],[1140,1150],[1300,1010],[1480,880],[1700,760],[1900,640],[2080,520],[2180,380],[2150,250],[2020,160],[1820,120],[1600,150],[1380,220],[1180,330],[1000,480],[860,650],[740,840],[640,1020],[540,1180],[420,1290]];
+const IWO_CENTRAL = [[1000,700],[1250,480],[1550,400],[1750,520],[1700,760],[1480,880],[1250,980],[1060,900]];
+const IWO_PATH_W = [[700,1300],[600,1120],[640,960],[760,800],[900,620],[1100,420],[1400,260],[1750,180]];
+const IWO_PATH_C = [[880,1130],[1050,950],[1300,760],[1550,560],[1800,380],[1950,250]];
+const IWO_PATH_E = [[1250,1000],[1450,870],[1650,740],[1850,600],[2050,420]];
+
+const IWOJIMA = {
+  id: 'iwojima',
+  name: 'Battle of Iwo Jima',
+  date: 'February 19 – March 26, 1945',
+  location: 'Iwo Jima, Volcano Islands',
+  summary: 'Three Marine divisions of the V Amphibious Corps landed on the southeastern beaches of Iwo Jima, a volcanic island fortified by Lt. Gen. Tadamichi Kuribayashi with bunkers, pillboxes and kilometres of tunnels. Soft black volcanic sand slowed every step off the beach; Mount Suribachi at the southern tip overlooked the landing. The Marines cut across the neck, took Suribachi on D+4, and spent five more weeks clearing the northern plateau. It was one of the few Pacific battles where American casualties exceeded Japanese.',
+  scale: 100, // 1 sphere = 100 soldiers
+  world: { w: 2400, h: 1800 },
+  base: 'water',
+  smoke: 0.35, // smokeless powder; smoke here is mostly from shellfire
+  palette: { water: '#47677a', open: '#8e8877', sand: '#5f5a52', hill: '#7f7665', peak: '#6a604f', rough: '#776d5c' },
+  sides: [
+    { name: 'U.S. Marines (V Amphibious Corps)', color: '#2f5f92' },
+    { name: 'Imperial Japanese garrison', color: '#b8432f' },
+  ],
+  unitTypes: {
+    marine: { label: 'U.S. Marine rifle squad element', accuracy: 0.10, range: 140, fireInterval: 1.5, ammo: 60,
+      speed: 1.0, morale: 85, routAt: 5, melee: 1.0, lethality: 0.26, injuredRetreat: 0.7, seekCover: true, assault: true },
+    ija: { label: 'Japanese defender (rifle / MG / mortar)', accuracy: 0.09, range: 150, fireInterval: 1.8, ammo: 140,
+      speed: 0.9, morale: 100, routAt: -1, melee: 1.2, lethality: 0.2, injuredRetreat: 0, tunnels: true },
+  },
+  terrain: [
+    { type: 'open', poly: ISLAND },
+    { type: 'rough', poly: [[1000,620],[1250,420],[1550,300],[1850,220],[2080,300],[2120,430],[1950,580],[1700,760],[1480,880],[1250,960],[1080,900]] }, // Motoyama plateau / northern badlands
+    { type: 'rough', circle: [1220, 1010, 50] }, // the Quarry above Blue Beach
+    { type: 'hill', circle: [1580, 860, 60] },   // Hill 382 ("Meat Grinder")
+    { type: 'hill', circle: [1150, 600, 55] },   // Hill 362A
+    { type: 'hill', circle: [1850, 520, 55] },
+    { type: 'airfield', width: 44, line: [[700, 1180], [1020, 1020]] }, { type: 'airfield', width: 40, line: [[780, 980], [960, 1240]] }, // Motoyama Airfield No. 1
+    { type: 'airfield', width: 44, line: [[1150, 800], [1500, 620]] }, { type: 'airfield', width: 40, line: [[1260, 560], [1400, 870]] }, // Airfield No. 2
+    { type: 'airfield', width: 30, line: [[1620, 420], [1880, 300]] }, // unfinished Airfield No. 3
+    // soft volcanic-ash beaches and terraces on the southeastern shore
+    { type: 'sand', poly: [[600,1664],[700,1544],[840,1424],[1000,1304],[1160,1174],[1320,1034],[1230,925],[1070,1065],[910,1195],[750,1315],[610,1435],[510,1555]] },
+    { type: 'hill', circle: [360, 1560, 150] },  // Mount Suribachi, 169 m
+    { type: 'peak', circle: [360, 1560, 80] },
+    ...scatter('bunker', 41, 22, { circle: [360, 1560, 135] }, 12, 18, ISLAND),
+    ...scatter('bunker', 42, 30, { circle: [880, 1100, 260] }, 12, 20, ISLAND),
+    ...scatter('bunker', 43, 60, { poly: IWO_CENTRAL }, 12, 20, ISLAND),
+    ...scatter('bunker', 44, 60, { circle: [1800, 380, 300] }, 12, 20, ISLAND),
+  ],
+  zones: {
+    suribachi: { name: 'Mt. Suribachi summit', circle: [360, 1560, 60] },
+    airfield1: { name: 'Airfield No. 1', circle: [870, 1110, 130] },
+    airfield2: { name: 'Airfield No. 2', circle: [1330, 715, 140] },
+    north: { name: 'Kitano Point', circle: [1950, 230, 150] },
+  },
+  phases: [{
+    name: 'Landing and battle for the island', view: [150, 100, 2150, 1650],
+    clock: { start: [1945, 1, 19, 9, 0], minPerSec: 144, dday: true }, // H-Hour 09:00, Feb 19 1945; 1 sim-second ≈ 2.4 h
+    bombardment: { side: 1, avoidSide: 0, avoidR: 150, preUntil: 6, preRate: 14, rate: 0.5, radius: 24, lethality: 0.4 },
+    supply: [{ side: 0, x: 690, y: 1450, r: 40, from: 8 }, { side: 0, x: 880, y: 1300, r: 40, from: 8 }, { side: 0, x: 1050, y: 1180, r: 40, from: 8 }],
+    spawns: [
+      // Japanese garrison ≈21,000 (estimates 20,530–21,060; Bartley 1954, Burrell 2006).
+      // Sector split below is a modeling abstraction.
+      { side: 1, key: 'suribachiDef', label: 'Suribachi sector garrison', type: 'ija', men: 2000, // commonly cited ≈2,000 (Alexander 1994)
+        area: { circle: [360, 1560, 150] }, formation: 'bunkers', behavior: 'defend', holdFireUntil: 6 },
+      { side: 1, key: 'southDef', label: 'Airfield No. 1 & beach defences', type: 'ija', men: 3000, area: { circle: [880, 1080, 260] }, formation: 'bunkers', behavior: 'defend', holdFireUntil: 6 },
+      { side: 1, key: 'centralDef', label: 'Motoyama plateau defences', type: 'ija', men: 8000, area: { poly: IWO_CENTRAL }, formation: 'bunkers', behavior: 'defend', holdFireUntil: 6 },
+      { side: 1, key: 'northDef', label: 'Northern sector (Kuribayashi HQ)', type: 'ija', men: 7700, area: { circle: [1800, 380, 300] }, formation: 'bunkers', behavior: 'defend', holdFireUntil: 6 },
+      { side: 1, key: 'finalAttack', label: 'Final night attack force', type: 'ija', men: 300, // ≈200–300 men attacked near Airfield No. 2 on Mar 26 (Alexander 1994)
+        area: { circle: [1650, 500, 110] }, formation: 'bunkers', behavior: 'defend', holdFireUntil: 6,
+        transitions: [{ when: { time: 346 }, to: { behavior: 'advance', path: [[1500, 640], [1330, 715]], formation: 'scatter' },
+          log: 'Before dawn on March 26, the last few hundred defenders launch a final attack on the camps near Airfield No. 2.' }] },
+      // Marines: ≈70,000 in V Amphibious Corps (Alexander 1994); ≈30,000 landed on D-Day (Alexander 1994).
+      // Regiment allocation and wave timing are modeling abstractions.
+      { side: 0, key: 'm28', label: '28th Marines (Suribachi)', type: 'marine', men: 3500, at: [604, 1549], r: 35, formation: 'scatter', behavior: 'advance', creep: 0.35, hunt: true,
+        path: [[560, 1440], [440, 1360], [320, 1400], [370, 1460], [360, 1520], [360, 1560]], spawnAt: 2, arriveText: 'First waves hit Green, Red, Yellow and Blue beaches; amtracs bog down in the soft volcanic ash.' },
+      { side: 0, key: 'm27', label: '27th Marines', type: 'marine', men: 5000, at: [724, 1429], r: 35, formation: 'scatter', behavior: 'advance', creep: 0.3, hunt: true, path: IWO_PATH_W, spawnAt: 2.5 },
+      { side: 0, key: 'm23', label: '23rd Marines', type: 'marine', men: 5000, at: [874, 1309], r: 35, formation: 'scatter', behavior: 'advance', creep: 0.3, hunt: true, path: IWO_PATH_C, spawnAt: 3 },
+      { side: 0, key: 'm25', label: '25th Marines', type: 'marine', men: 5000, at: [1034, 1184], r: 35, formation: 'scatter', behavior: 'advance', creep: 0.3, hunt: true, path: IWO_PATH_E, spawnAt: 3.5 },
+      { side: 0, key: 'dd1', label: 'D-Day follow-on (24th Marines, support)', type: 'marine', men: 5800, at: [874, 1309], r: 40, formation: 'scatter', behavior: 'advance', creep: 0.3, hunt: true, path: IWO_PATH_C, spawnAt: 10 },
+      { side: 0, key: 'dd2', label: 'D-Day follow-on (26th Marines, support)', type: 'marine', men: 5700, at: [1034, 1184], r: 40, formation: 'scatter', behavior: 'advance', creep: 0.3, hunt: true, path: IWO_PATH_E, spawnAt: 12 },
+      { side: 0, key: 'm21', label: '3rd Mar. Div. — 21st Marines', type: 'marine', men: 10000, at: [874, 1309], r: 45, formation: 'scatter', behavior: 'advance', creep: 0.3, hunt: true, path: IWO_PATH_C, spawnAt: 22, arriveText: '3rd Marine Division regiments come ashore to take the centre of the line.' },
+      { side: 0, key: 'reinfA', label: '4th & 5th Div. replacements', type: 'marine', men: 10000, at: [724, 1429], r: 45, formation: 'scatter', behavior: 'advance', creep: 0.3, hunt: true, path: IWO_PATH_W, spawnAt: 30 },
+      { side: 0, key: 'm9', label: '3rd Mar. Div. — 9th Marines', type: 'marine', men: 10000, at: [874, 1309], r: 45, formation: 'scatter', behavior: 'advance', creep: 0.3, hunt: true, path: IWO_PATH_C, spawnAt: 40 },
+      { side: 0, key: 'reinfB', label: 'Corps troops & replacements', type: 'marine', men: 10000, at: [1034, 1184], r: 45, formation: 'scatter', behavior: 'advance', creep: 0.3, hunt: true, path: IWO_PATH_E, spawnAt: 50 },
+    ],
+    events: [
+      { t: 0, text: 'H-Hour. Battleships, cruisers and carrier aircraft pound the island ahead of the landing.' },
+      { t: 6, text: 'Kuribayashi\'s gunners, silent until the beaches are crowded, open fire from Suribachi and the plateau.' },
+      { t: 254, text: 'Historical: the island is declared secured on March 16 — but fighting continues in the north.' },
+    ],
+    captures: [
+      { zone: 'suribachi', side: 0, clear: true, flag: true, text: 'Marines raise the flag on Mount Suribachi (historically February 23, D+4).' },
+      { zone: 'airfield1', side: 0, clear: true, text: 'Airfield No. 1 is in Marine hands.' },
+      { zone: 'airfield2', side: 0, clear: true, text: 'Airfield No. 2 is overrun.' },
+      { zone: 'north', side: 0, clear: true, text: 'Marines reach Kitano Point at the northern tip.' },
+    ],
+    end: { time: 360, timeText: 'March 26, 1945 — the operation is declared over.' },
+  }],
+  historical: {
+    outcome: 'U.S. victory. The island was declared secure on March 16 and organized resistance ended March 26. Almost the entire garrison died; only 216 were taken prisoner.',
+    casualties: [
+      { side: 0, killed: 6821, wounded: 19217, missing: 0, src: SRC.bartley }, // 6,821 killed, 19,217 wounded (Marines + Navy) — Bartley 1954
+      { side: 1, killed: 18100, wounded: null, missing: 216, missingLabel: 'captured', // ≈17,845–18,375 killed; 216 captured — Burrell 2006 / Bartley 1954
+        note: 'killed estimates range 17,845–18,375; many hundreds more surrendered after March 26', src: SRC.burrell },
+    ],
+    strengths: 'Marines ≈70,000 (≈30,000 ashore on D-Day); Japanese ≈21,000 (Alexander 1994; Bartley 1954).',
+  },
+};
+
+/* ---------------- Sandbox ---------------- */
+const SANDBOX = {
+  id: 'sandbox',
+  name: 'Sandbox: open field',
+  date: 'Hypothetical engagement',
+  location: 'A river valley',
+  summary: 'Two equal armies meet across a river with two bridges. Edit the armies, then use "Paint terrain" to reshape the field and see how cover, high ground and chokepoints change the outcome.',
+  scale: 10,
+  world: { w: 1800, h: 1100 },
+  base: 'open',
+  smoke: 0.8,
+  sides: [{ name: 'Blue Army', color: '#3b64a0' }, { name: 'Red Army', color: '#b33a2e' }],
+  unitTypes: {
+    rifle: { label: 'Line infantry', accuracy: 0.12, range: 130, fireInterval: 2.0, ammo: 40, speed: 1.0, morale: 70, routAt: 20, melee: 1.0, lethality: 0.3, injuredRetreat: 0.5, seekCover: true },
+  },
+  terrain: [
+    { type: 'forest', circle: [400, 250, 100] }, { type: 'forest', circle: [1380, 820, 120] }, { type: 'forest', circle: [700, 920, 80] }, { type: 'forest', circle: [1450, 200, 70] },
+    { type: 'hill', circle: [600, 560, 130] }, { type: 'hill', circle: [1250, 300, 90] },
+    { type: 'sand', circle: [1050, 1000, 80] },
+    ...houses(51, 9, { rect: [1130, 500, 160, 140] }),
+    { type: 'wall', width: 12, line: [[1050, 450], [1050, 700]] }, { type: 'wall', width: 12, line: [[700, 380], [800, 380]] },
+    { type: 'bunker', circle: [1300, 640, 18] },
+    { type: 'water', width: 40, line: [[900, 0], [880, 300], [920, 600], [890, 1100]] },
+    { type: 'bridge', width: 22, line: [[835, 300], [928, 300]] }, { type: 'bridge', width: 22, line: [[860, 800], [955, 800]] },
+  ],
+  zones: { hillW: { name: 'West hill', circle: [600, 560, 120] }, town: { name: 'Village', circle: [1210, 570, 100] } },
+  phases: [{
+    name: 'Meeting engagement', view: [0, 0, 1800, 1100],
+    clock: { start: [1800, 5, 1, 9, 0], minPerSec: 1 },
+    supply: [{ side: 0, x: 120, y: 550, r: 45, from: 0 }, { side: 1, x: 1680, y: 550, r: 45, from: 0 }],
+    spawns: [
+      { side: 0, key: 'bN', label: 'Blue north wing', type: 'rifle', men: 750, at: [200, 420], formation: 'line', rows: 3, behavior: 'advance', hunt: true, path: [[600, 330], [835, 300], [950, 300], [1250, 420], [1550, 550]] },
+      { side: 0, key: 'bS', label: 'Blue south wing', type: 'rifle', men: 750, at: [200, 680], formation: 'line', rows: 3, behavior: 'advance', hunt: true, path: [[600, 760], [860, 800], [970, 800], [1300, 700], [1550, 550]] },
+      { side: 1, key: 'rN', label: 'Red north wing', type: 'rifle', men: 750, at: [1600, 420], formation: 'line', rows: 3, behavior: 'advance', hunt: true, path: [[1200, 330], [940, 300], [820, 300], [550, 420], [250, 550]] },
+      { side: 1, key: 'rS', label: 'Red south wing', type: 'rifle', men: 750, at: [1600, 680], formation: 'line', rows: 3, behavior: 'advance', hunt: true, path: [[1200, 760], [965, 800], [850, 800], [500, 700], [250, 550]] },
+    ],
+    captures: [{ zone: 'hillW', side: 0, clear: true, text: 'Blue holds the west hill.' }, { zone: 'hillW', side: 1, clear: true, text: 'Red seizes the west hill.' },
+               { zone: 'town', side: 1, clear: true, text: 'Red holds the village.' }, { zone: 'town', side: 0, clear: true, text: 'Blue takes the village.' }],
+    end: { time: 400 },
+  }],
+  historical: null,
+};
+
+const PRESETS = [LEXINGTON, IWOJIMA, SANDBOX];
+/* =====================================================================
+   5. TERRAIN GRID — lookup grid of terrain types + elevation layer.
+   Impassable cells (water) become matter.js static bodies.
+   ===================================================================== */
+class Terrain {
+  constructor(w, h, base) {
+    this.C = CONFIG.CELL; this.w = w; this.h = h;
+    this.gw = Math.ceil(w / this.C); this.gh = Math.ceil(h / this.C);
+    this.type = new Uint8Array(this.gw * this.gh).fill(TI[base]);
+    this.elev = new Uint8Array(this.gw * this.gh).fill(TERRAIN[base].elev);
+  }
+  idx(x, y) { return clamp(Math.floor(y / this.C), 0, this.gh - 1) * this.gw + clamp(Math.floor(x / this.C), 0, this.gw - 1); }
+  at(x, y) { return TL[this.type[this.idx(x, y)]]; }
+  elevAt(x, y) { return this.elev[this.idx(x, y)]; }
+  center(i) { return [(i % this.gw + 0.5) * this.C, (Math.floor(i / this.gw) + 0.5) * this.C]; }
+  setCell(i, key) {
+    const T = TERRAIN[key];
+    this.elev[i] = T.keepElev ? Math.max(this.elev[i], T.elev) : T.elev;
+    this.type[i] = TI[key];
+  }
+  apply(f) {
+    const C = this.C; let bb, test;
+    if (f.line) {
+      const hw = Math.max(f.width / 2, C * 0.5), pts = f.line;
+      bb = regionBBox({ poly: pts }); bb = [bb[0] - hw, bb[1] - hw, bb[2] + hw, bb[3] + hw];
+      test = (x, y) => distToPolyline(x, y, pts) <= hw;
+    } else { bb = regionBBox(f); test = (x, y) => inRegion(x, y, f); }
+    const x0 = clamp(Math.floor(bb[0] / C), 0, this.gw - 1), x1 = clamp(Math.floor(bb[2] / C), 0, this.gw - 1);
+    const y0 = clamp(Math.floor(bb[1] / C), 0, this.gh - 1), y1 = clamp(Math.floor(bb[3] / C), 0, this.gh - 1);
+    let n = 0;
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++)
+      if (test((cx + 0.5) * C, (cy + 0.5) * C)) { this.setCell(cy * this.gw + cx, f.type); n++; }
+    if (!n) this.setCell(this.idx((bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2), f.type); // tiny features still mark one cell
+  }
+}
+
+/* =====================================================================
+   6. SIMULATION STATE
+   ===================================================================== */
+const S = {
+  preset: null, terrain: null, baseType: null, baseElev: null, engine: null, statics: [],
+  units: [], dead: [], groups: [], groupByKey: {}, drops: [], supply: [],
+  t: 0, phaseIdx: 0, phase: null, phaseT: 0, stepCount: 0,
+  running: false, started: false, ended: false, speed: 1,
+  sides: [], sideMul: [1, 1], stats: [], pending: [], phaseEvents: [], captures: [], flags: [],
+  cam: { x: 0, y: 0, z: 1 }, camTarget: null,
+  fx: { particles: [], tracers: [], shells: [] }, bombAcc: 0,
+  toggles: { effects: true, territory: true, heat: false, trails: false, labels: true, follow: true },
+  occ: null, infl: null, heat: null, front: [], bunkerCells: [], landCells: [],
+  selected: null, hover: null, log: [],
+};
+
+/* ---------- spatial hash (rebuilt every step; O(n)) ---------- */
+const HASH = { cs: CONFIG.HASH, gw: 1, gh: 1, cells: [] };
+function hashInit(w, h) {
+  HASH.gw = Math.ceil(w / HASH.cs) + 1; HASH.gh = Math.ceil(h / HASH.cs) + 1;
+  HASH.cells = Array.from({ length: HASH.gw * HASH.gh }, () => []);
+}
+function hashBuild() {
+  for (const c of HASH.cells) c.length = 0;
+  S.occ.fill(0);
+  for (const u of S.units) {
+    if (u.dead) continue;
+    const p = u.body.position;
+    const cx = clamp(Math.floor(p.x / HASH.cs), 0, HASH.gw - 1), cy = clamp(Math.floor(p.y / HASH.cs), 0, HASH.gh - 1);
+    HASH.cells[cy * HASH.gw + cx].push(u);
+    S.occ[S.terrain.idx(p.x, p.y)]++;
+  }
+}
+function forNear(x, y, r, fn) {
+  const cs = HASH.cs;
+  const x0 = clamp(Math.floor((x - r) / cs), 0, HASH.gw - 1), x1 = clamp(Math.floor((x + r) / cs), 0, HASH.gw - 1);
+  const y0 = clamp(Math.floor((y - r) / cs), 0, HASH.gh - 1), y1 = clamp(Math.floor((y + r) / cs), 0, HASH.gh - 1);
+  for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+    const cell = HASH.cells[cy * HASH.gw + cx];
+    for (let i = 0; i < cell.length; i++) fn(cell[i]);
+  }
+}
+// k nearest enemies within r, sorted by distance
+function nearestEnemies(u, r, k) {
+  const out = [], px = u.x, py = u.y, r2 = r * r;
+  forNear(px, py, r, v => {
+    if (v.side === u.side || v.dead) return;
+    const dx = v.body.position.x - px, dy = v.body.position.y - py, d2 = dx * dx + dy * dy;
+    if (d2 > r2 || (out.length >= k && d2 >= out[out.length - 1].d2)) return;
+    let i = out.length; while (i > 0 && out[i - 1].d2 > d2) i--;
+    out.splice(i, 0, { u: v, d2 });
+    if (out.length > k) out.pop();
+  });
+  for (const o of out) o.d = Math.sqrt(o.d2);
+  return out;
+}
+
+/* =====================================================================
+   7. UNIT CLASS
+   ===================================================================== */
+let UID = 0;
+class Soldier {
+  constructor(side, group, T, x, y) {
+    this.id = ++UID; this.side = side; this.group = group; this.T = T;
+    this.health = 100; this.injured = false; this.wasInjured = false; this.dead = false;
+    this.armed = !(group.def.unarmedFrac && Math.random() < group.def.unarmedFrac);
+    this.ammo = this.armed ? T.ammo : 0;
+    this.morale = group.def.morale ?? T.morale;
+    this.routing = false; this.withdrawing = false; this.tunneled = false;
+    this.cool = Math.random() * T.fireInterval; this.nextThink = S.t + Math.random() * 0.4; this.lastThink = S.t;
+    this.target = null; this.tDist = Infinity; this.inRange = false; this.losOK = false;
+    this.suppressedUntil = -1; this.coverUntil = -1; this.cx = x; this.cy = y; this.hitAt = -9;
+    this.mode = 'form'; this.goalX = x; this.goalY = y; this.stand = false; this.speedMul = 1; this.order = '';
+    this.home = { x, y }; this.offF = 0; this.offR = 0;
+    this.jx = rand(-30, 30); this.jy = rand(-30, 30);
+    this.lead = rand(60, 320); this.lateral = (Math.random() < 0.5 ? -1 : 1) * rand(90, 200);
+    this.r = T.radius || CONFIG.UNIT_R;
+    this.body = Bodies.circle(x, y, this.r, { frictionAir: 0.1, friction: 0, frictionStatic: 0, restitution: 0, inertia: Infinity, density: 0.002, label: 'soldier' });
+    this.body.plugin.unit = this;
+    this.cellT = S.terrain.at(x, y);
+  }
+  get x() { return this.body.position.x; }
+  get y() { return this.body.position.y; }
+  get status() { return this.dead ? 'DEAD' : this.injured ? 'INJURED' : 'HEALTHY'; }
+  get moving() { const v = this.body.velocity; return v.x * v.x + v.y * v.y > 0.04; }
+}
+
+/* =====================================================================
+   8. GROUPS & FORMATIONS
+   A group has an "anchor" that moves along its path; members steer to
+   formation slots relative to the anchor (or to breadcrumbs of the anchor
+   trail for columns, so long columns follow roads around bends).
+   ===================================================================== */
+let GID = 0;
+const v2 = (x, y) => ({ x, y });
+const norm = (x, y) => { const d = Math.hypot(x, y) || 1; return v2(x / d, y / d); };
+
+function groupSpheres(def, scale) { return def.count ?? Math.max(1, Math.round(def.men / scale)); }
+
+function spawnGroup(def) {
+  const P = S.preset, T = P.unitTypes[def.type], side = def.side;
+  const n = def.count ? def.count : Math.max(1, Math.round(groupSpheres(def, P.scale) * S.sideMul[side]));
+  let ax, ay;
+  if (def.at) [ax, ay] = def.at; else { const bb = regionBBox(def.area); ax = (bb[0] + bb[2]) / 2; ay = (bb[1] + bb[3]) / 2; }
+  const path = (def.path || []).map(p => v2(p[0], p[1]));
+  let dir = def.facing ? norm(def.facing[0], def.facing[1]) : path.length ? norm(path[0].x - ax, path[0].y - ay) : v2(1, 0);
+  const g = {
+    id: ++GID, def, key: def.key || 'g' + GID, side, label: def.label, behavior: def.behavior || 'hold',
+    path, pathIdx: 0, anchor: v2(ax, ay), dir, trail: [], units: [], initial: n,
+    holdFireUntil: def.holdFireUntil || 0, creep: def.creep ?? 0.25, formation: def.formation || 'line',
+    cols: def.cols || 4, rows: def.rows || 2, hunt: !!def.hunt, speed: T.speed * (def.speedMul || 1),
+    transitions: (def.transitions || []).map(t => Object.assign({ done: false }, t)),
+    rally: def.rally ? v2(def.rally[0], def.rally[1]) : v2(ax, ay),
+    alive: n, engaged: 0, err: 0, cx: ax, cy: ay, huntTarget: null, routLogged: false,
+  };
+  if (!def.rally && (g.behavior === 'retreat' || g.behavior === 'march') && path.length) g.rally = Object.assign({}, path[path.length - 1]);
+  // breadcrumb trail for columns: sample the backPath up to the anchor
+  buildTrail(g, def.backPath);
+  const slots = formationSlots(g, n);
+  let homes = null;
+  if (g.formation === 'bunkers') homes = bunkerHomes(def.area, n);
+  for (let i = 0; i < n; i++) {
+    const s = slots[i];
+    let x, y;
+    if (homes) { [x, y] = homes[i]; }
+    else { const p = slotPos(g, s.f, s.r); x = p.x; y = p.y; }
+    const u = new Soldier(side, g, T, x, y);
+    u.offF = s.f; u.offR = s.r;
+    if (homes) u.home = v2(x, y);
+    g.units.push(u); S.units.push(u);
+    Composite.add(S.engine.world, u.body);
+  }
+  S.groups.push(g); S.groupByKey[g.key] = g;
+  S.stats[side].spawned += n;
+  return g;
+}
+
+function buildTrail(g, backPath) {
+  const pts = (backPath || [[g.anchor.x - g.dir.x * 600, g.anchor.y - g.dir.y * 600]]).concat([[g.anchor.x, g.anchor.y]]);
+  g.trail = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], L = Math.hypot(x2 - x1, y2 - y1), n = Math.max(1, Math.round(L / CONFIG.TRAIL_STEP));
+    for (let k = 0; k < n; k++) g.trail.push(v2(x1 + (x2 - x1) * k / n, y1 + (y2 - y1) * k / n));
+  }
+  g.trail.push(v2(g.anchor.x, g.anchor.y));
+}
+
+// formation slots as (forward offset f, right offset r)
+function formationSlots(g, n) {
+  const SP = CONFIG.SPACING, out = [];
+  for (let i = 0; i < n; i++) {
+    if (g.formation === 'column') {
+      const cols = g.cols, row = Math.floor(i / cols), col = i % cols;
+      out.push({ f: -row * SP, r: (col - (cols - 1) / 2) * SP * 0.9 });
+    } else if (g.formation === 'scatter') {
+      const R = g.def.r || 60, a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * R;
+      out.push({ f: Math.cos(a) * d, r: Math.sin(a) * d });
+    } else { // line (also used as a fallback for bunkers)
+      const rows = g.rows, cols = Math.ceil(n / rows), col = Math.floor(i / rows), row = i % rows;
+      out.push({ f: -row * SP, r: (col - (cols - 1) / 2) * SP });
+    }
+  }
+  return out;
+}
+function setFormation(g, f, opts = {}) {
+  g.formation = f; if (opts.rows) g.rows = opts.rows; if (opts.cols) g.cols = opts.cols;
+  const alive = g.units.filter(u => !u.dead);
+  if (f === 'column') buildTrail(g, null);
+  const slots = formationSlots(g, alive.length);
+  alive.forEach((u, i) => { u.offF = slots[i].f; u.offR = slots[i].r; });
+}
+function slotPos(g, f, r) {
+  if (g.formation === 'column' && g.trail.length > 1) {
+    const L = g.trail.length;
+    let idx = L - 1 - Math.round(-f / CONFIG.TRAIL_STEP);
+    let extra = 0;
+    if (idx < 0) { extra = -idx * CONFIG.TRAIL_STEP; idx = 0; }
+    const p = g.trail[idx], q = g.trail[Math.min(idx + 1, L - 1)], o = g.trail[Math.max(idx - 1, 0)];
+    const d = norm(q.x - o.x || g.dir.x, q.y - o.y || g.dir.y);
+    return v2(p.x - d.x * extra - d.y * r, p.y - d.y * extra + d.x * r);
+  }
+  const d = g.dir;
+  return v2(g.anchor.x + d.x * f - d.y * r, g.anchor.y + d.y * f + d.x * r);
+}
+function formationGoal(u) {
+  const g = u.group;
+  if (g.formation === 'bunkers' || g.behavior === 'defend') return u.home;
+  return slotPos(g, u.offF, u.offR);
+}
+// pick fortification cells inside an area for dug-in defenders (falls back to any passable cell)
+function bunkerHomes(area, n) {
+  const tr = S.terrain, bb = regionBBox(area), C = tr.C, cand = [], any = [];
+  for (let y = bb[1]; y <= bb[3]; y += C) for (let x = bb[0]; x <= bb[2]; x += C) {
+    if (!inRegion(x, y, area)) continue;
+    const i = tr.idx(x, y), [cx, cy] = tr.center(i);
+    if (tr.type[i] === TI.bunker) cand.push([cx, cy]); else if (!TL[tr.type[i]].impassable) any.push([cx, cy]);
+  }
+  const pool = cand.length ? cand : any.length ? any : [[(bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2]];
+  const out = [];
+  for (let i = 0; i < n; i++) { const p = pool[Math.floor(Math.random() * pool.length)]; out.push([p[0] + rand(-6, 6), p[1] + rand(-6, 6)]); }
+  return out;
+}
+
+const MOVING_BEHAVIORS = new Set(['advance', 'march', 'retreat', 'withdraw', 'hunt']);
+function groupMove(g, dt) {
+  if (!MOVING_BEHAVIORS.has(g.behavior) || g.alive === 0) return;
+  let target;
+  if (g.behavior === 'hunt') { target = g.huntTarget; if (!target) return; }
+  else {
+    if (g.pathIdx >= g.path.length) {
+      // a column that reaches its destination closes up around the end point
+      if (g.formation === 'column' && g.behavior !== 'advance') setFormation(g, 'scatter');
+      g.behavior = (g.behavior === 'advance' && g.hunt) ? 'hunt' : 'hold'; return;
+    }
+    target = g.path[g.pathIdx];
+  }
+  const dx = target.x - g.anchor.x, dy = target.y - g.anchor.y, d = Math.hypot(dx, dy);
+  if (d < 8) { if (g.behavior !== 'hunt') g.pathIdx++; return; }
+  // Advancing groups stop to fight when engaged but keep creeping forward; marching/retreating
+  // groups keep moving, slowed by fire. The anchor waits if members fall far behind (cohesion).
+  let mul = 1;
+  if (g.behavior === 'advance' || g.behavior === 'hunt') mul = g.engaged > 0.2 ? g.creep : 1;
+  else mul = g.engaged > 0.2 ? 0.75 : 1;
+  if (g.err > 45) mul *= 0.4;
+  const terr = Math.max(0.3, S.terrain.at(g.anchor.x, g.anchor.y).speed || 0.3);
+  const step = Math.min(d, CONFIG.BASE_SPEED * 60 * g.speed * terr * mul * dt);
+  g.anchor.x += dx / d * step; g.anchor.y += dy / d * step;
+  const want = norm(dx, dy);
+  g.dir = norm(g.dir.x + (want.x - g.dir.x) * 0.05, g.dir.y + (want.y - g.dir.y) * 0.05);
+  const last = g.trail[g.trail.length - 1];
+  if (!last || Math.hypot(g.anchor.x - last.x, g.anchor.y - last.y) >= CONFIG.TRAIL_STEP) {
+    g.trail.push(v2(g.anchor.x, g.anchor.y));
+    const maxLen = Math.ceil(g.initial / g.cols) * CONFIG.SPACING / CONFIG.TRAIL_STEP + 60;
+    if (g.trail.length > maxLen + 200) g.trail.splice(0, g.trail.length - maxLen);
+  }
+}
+/* =====================================================================
+   9. AI — per-soldier decisions (staggered "think" every ~0.4 s) and
+   per-step steering. Priority: unarmed → routing → wounded withdrawal →
+   out of ammo → group behaviour (formation / skirmish / defend).
+   ===================================================================== */
+const ORDER_LABEL = { advance: 'Advancing', hold: 'Holding position', march: 'Marching', retreat: 'Retreating under fire',
+  withdraw: 'Withdrawing', skirmish: 'Skirmishing', defend: 'Defending fortified position', hunt: 'Seeking the enemy' };
+
+function effRange(u, v) {
+  const es = S.terrain.elevAt(u.x, u.y), et = v ? S.terrain.elevAt(v.x, v.y) : 0;
+  return u.T.range * (1 + CONFIG.ELEV_RANGE_BONUS * Math.max(0, es - et)) * (u.injured ? CONFIG.INJURED_RANGE : 1);
+}
+
+// Line of sight across the terrain grid: sums the opacity of crossed cells (endpoints excluded).
+// Looking down from higher ground halves vegetation opacity; ground higher than both ends blocks (crests).
+function hasLOS(x0, y0, x1, y1) {
+  const tr = S.terrain, C = tr.C;
+  let cx = Math.floor(x0 / C), cy = Math.floor(y0 / C);
+  const ex = Math.floor(x1 / C), ey = Math.floor(y1 / C);
+  const es = tr.elevAt(x0, y0), et = tr.elevAt(x1, y1), top = Math.max(es, et);
+  const dx = Math.abs(ex - cx), dy = -Math.abs(ey - cy), sx = cx < ex ? 1 : -1, sy = cy < ey ? 1 : -1;
+  let err = dx + dy, acc = 0;
+  while (true) {
+    const e2 = 2 * err;
+    if (e2 >= dy) { err += dy; cx += sx; }
+    if (e2 <= dx) { err += dx; cy += sy; }
+    if (cx === ex && cy === ey) return true;
+    if (cx < 0 || cy < 0 || cx >= tr.gw || cy >= tr.gh) return true;
+    const i = cy * tr.gw + cx, T = TL[tr.type[i]], el = tr.elev[i];
+    let o = T.los; if (es > el) o *= 0.5;
+    if (el > top) o += 0.5;
+    acc += o;
+    if (acc >= 1) return false;
+  }
+}
+
+function acquire(u) {
+  const c = nearestEnemies(u, Math.max(u.T.range * 1.8, 240), 5);
+  u.target = null; u.tDist = Infinity; u.inRange = false; u.losOK = false;
+  u.nearest = c.length ? c[0].u : null; u.nearD = c.length ? c[0].d : Infinity;
+  if (!c.length) return;
+  for (const e of c) {
+    if (e.d > effRange(u, e.u)) break;
+    if (hasLOS(u.x, u.y, e.u.x, e.u.y)) { u.target = e.u; u.tDist = e.d; u.inRange = true; u.losOK = true; return; }
+  }
+  u.target = c[0].u; u.tDist = c[0].d; // nearest, for movement decisions
+}
+
+// sample nearby cells and return the best cover spot (cover, height, low crowding, near bias point)
+function findCover(x, y, radius, bx, by) {
+  const tr = S.terrain; let best = null, bs = -1e9;
+  for (let k = 0; k < 14; k++) {
+    const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * radius;
+    const px = clamp(x + Math.cos(a) * r, 5, tr.w - 5), py = clamp(y + Math.sin(a) * r, 5, tr.h - 5);
+    const i = tr.idx(px, py), T = TL[tr.type[i]];
+    if (T.impassable) continue;
+    const [cx, cy] = tr.center(i);
+    const s = T.cover * 2 + tr.elev[i] * 0.15 - S.occ[i] * 0.35 - Math.hypot(cx - bx, cy - by) / (radius * 2);
+    if (s > bs) { bs = s; best = v2(cx + rand(-5, 5), cy + rand(-5, 5)); }
+  }
+  return best;
+}
+function nearestSupply(u) {
+  let best = null, bd = Infinity;
+  for (const s of S.supply) {
+    if (s.side !== u.side || S.phaseT < (s.from || 0)) continue;
+    const d = Math.hypot(s.x - u.x, s.y - u.y); if (d < bd) { bd = d; best = s; }
+  }
+  return best;
+}
+function nearestDrop(u) {
+  let best = null, bd = CONFIG.PICKUP_RADIUS;
+  for (const d of S.drops) { const dd = Math.hypot(d.x - u.x, d.y - u.y); if (dd < bd) { bd = dd; best = d; } }
+  return best;
+}
+
+function think(u) {
+  const g = u.group, T = u.T, dtT = S.t - u.lastThink; u.lastThink = S.t;
+  u.cellT = S.terrain.at(u.x, u.y);
+  if (S.t > u.suppressedUntil) u.morale = Math.min(g.def.morale ?? T.morale, u.morale + CONFIG.MORALE_RECOVER * dtT);
+  if (!u.routing && T.routAt >= 0 && u.morale < T.routAt) u.routing = true;
+  if (u.routing && u.morale > CONFIG.ROUT_RECOVER) u.routing = false;
+  acquire(u);
+  u.stand = false; u.speedMul = 1; u.mode = 'form';
+  const go = (x, y) => { u.mode = 'goal'; u.goalX = x; u.goalY = y; };
+  const t = u.target;
+
+  // 1. Unarmed: avoid combat, look for a weapon among the fallen, else go to the rear
+  if (!u.armed) {
+    if (t && u.tDist < 130) { const a = norm(u.x - t.x, u.y - t.y); go(u.x + a.x * 90, u.y + a.y * 90); u.speedMul = 1.1; u.order = 'Unarmed — evading'; return; }
+    const d = nearestDrop(u);
+    if (d) {
+      if (Math.hypot(d.x - u.x, d.y - u.y) < CONFIG.PICKUP_DIST) {
+        u.armed = true; u.ammo = Math.max(6, d.ammo); S.drops.splice(S.drops.indexOf(d), 1); u.order = 'Picked up a weapon';
+      } else { go(d.x, d.y); u.order = 'Unarmed — seeking a weapon'; }
+      return;
+    }
+    go(g.rally.x + u.jx, g.rally.y + u.jy); u.order = 'Unarmed — falling back'; return;
+  }
+  // 2. Routing
+  if (u.routing) { go(g.rally.x + u.jx, g.rally.y + u.jy); u.speedMul = 1.15; u.order = 'Routing!'; return; }
+  // 3. Wounded who decided to withdraw
+  if (u.withdrawing) { go(g.rally.x + u.jx, g.rally.y + u.jy); u.order = 'Wounded — withdrawing'; return; }
+  // 4. Out of ammunition: charge if close and good at melee, else resupply or fall back
+  if (u.ammo <= 0) {
+    if (t && u.tDist < 70 && T.melee >= 1) { go(t.x, t.y); u.order = 'Out of ammo — melee charge'; return; }
+    const sp = nearestSupply(u);
+    if (sp) {
+      if (Math.hypot(sp.x - u.x, sp.y - u.y) < sp.r) { u.ammo = T.ammo; u.order = 'Resupplied'; }
+      else { go(sp.x + u.jx * 0.5, sp.y + u.jy * 0.5); u.order = 'Out of ammo — to supply point'; return; }
+    } else if (T.melee < 1) { go(g.rally.x + u.jx, g.rally.y + u.jy); u.order = 'Out of ammo — falling back'; return; }
+    else u.order = 'Out of ammo — bayonets';
+  }
+  // 5. Group behaviour
+  switch (g.behavior) {
+    case 'defend': {
+      u.order = ORDER_LABEL.defend;
+      if (u.inRange) u.stand = true;
+      // Tunnel network: wounded or overrun defenders slip away to another bunker behind the line
+      if (T.tunnels && !u.tunneled && S.bunkerCells.length && (u.injured || (t && u.tDist < 30)) && Math.random() < 0.25) tunnel(u);
+      break;
+    }
+    case 'skirmish': skirmishThink(u, go); break;
+    case 'march': case 'retreat': case 'withdraw': u.order = ORDER_LABEL[g.behavior]; break; // fire on the move
+    default: { // hold / advance / hunt
+      u.order = ORDER_LABEL[g.behavior];
+      if (u.coverUntil > S.t) { go(u.cx, u.cy); u.stand = Math.hypot(u.cx - u.x, u.cy - u.y) < 8; u.order = 'Moving cover to cover'; break; }
+      if (u.inRange) {
+        if (T.assault && t.cellT.cover >= 0.5 && u.tDist > CONFIG.CLOSE_ASSAULT) {
+          // bunker busting: bound forward to cover closer to the strongpoint
+          const k = Math.min(60, u.tDist - CONFIG.CLOSE_ASSAULT * 0.7), a = norm(t.x - u.x, t.y - u.y);
+          const c = findCover(u.x + a.x * k, u.y + a.y * k, 35, u.x + a.x * k, u.y + a.y * k);
+          if (c) { u.cx = c.x; u.cy = c.y; u.coverUntil = S.t + rand(1.2, 2.7); go(c.x, c.y); }
+          u.order = 'Assaulting fortified position';
+        } else { u.stand = true; u.order = 'Engaging'; }
+      } else if (T.seekCover && S.t < u.suppressedUntil && u.cellT.cover < 0.3) {
+        const fg = formationGoal(u), c = findCover(u.x, u.y, CONFIG.COVER_SEEK_RADIUS, fg.x, fg.y);
+        if (c) { u.cx = c.x; u.cy = c.y; u.coverUntil = S.t + CONFIG.COVER_HOLD; go(c.x, c.y); u.order = 'Taking cover'; }
+      }
+    }
+  }
+}
+
+// Skirmishers shadow an enemy column: run ahead along its flank, take cover within range, fire,
+// and leapfrog forward once it has passed — rather than every man beelining at the nearest enemy.
+function skirmishThink(u, go) {
+  const g = u.group, t = u.target, T = u.T;
+  if (t && u.tDist <= T.range * 1.25) {
+    const n = u.nearest;
+    if (u.nearD < 55 && n.T.melee > T.melee) { const a = norm(u.x - n.x, u.y - n.y); u.coverUntil = -1; go(u.x + a.x * 60, u.y + a.y * 60); u.order = 'Falling back from bayonets'; return; }
+    if (u.inRange && u.cellT.cover >= 0.4) { u.stand = true; u.order = 'Firing from cover'; return; }
+    if (u.coverUntil < S.t) {
+      const a = norm(u.x - t.x, u.y - t.y), px = t.x + a.x * T.range * 0.7, py = t.y + a.y * T.range * 0.7;
+      const c = findCover(px, py, 60, px, py);
+      if (c) { u.cx = c.x; u.cy = c.y; u.coverUntil = S.t + 3; }
+    }
+    go(u.cx, u.cy); u.stand = u.inRange && Math.hypot(u.cx - u.x, u.cy - u.y) < 8; u.order = 'Moving to cover'; return;
+  }
+  let eg = null, bd = Infinity;
+  for (const k of (g.def.shadow || [])) {
+    const o = S.groupByKey[k]; if (!o || o.alive === 0) continue;
+    const d = Math.hypot(o.anchor.x - u.x, o.anchor.y - u.y); if (d < bd) { bd = d; eg = o; }
+  }
+  if (!eg) for (const o of S.groups) { if (o.side === u.side || o.alive === 0) continue; const d = Math.hypot(o.cx - u.x, o.cy - u.y); if (d < bd) { bd = d; eg = o; } }
+  if (eg) {
+    const moving = MOVING_BEHAVIORS.has(eg.behavior);
+    const lead = moving ? u.lead : 0, bx = moving ? eg.anchor.x : eg.cx, by = moving ? eg.anchor.y : eg.cy;
+    go(clamp(bx + eg.dir.x * lead - eg.dir.y * u.lateral, 10, S.terrain.w - 10), clamp(by + eg.dir.y * lead + eg.dir.x * u.lateral, 10, S.terrain.h - 10));
+    u.order = 'Running ahead to flank the column';
+  } else { u.mode = 'form'; u.order = 'Waiting'; }
+}
+
+function tunnel(u) {
+  u.tunneled = true;
+  for (let k = 0; k < 40; k++) {
+    const [x, y] = S.bunkerCells[Math.floor(Math.random() * S.bunkerCells.length)];
+    if (u.group.def.area && !inRegion(x, y, u.group.def.area)) continue; // tunnels stay within the sector
+    if (Math.hypot(x - u.x, y - u.y) < 150) continue;
+    let enemy = false; forNear(x, y, 220, v => { if (v.side !== u.side) enemy = true; });
+    if (enemy) continue;
+    fxDust(u.x, u.y, 3);
+    Body.setPosition(u.body, { x, y }); u.home = v2(x, y);
+    if (!u.group.tunnelLogged) { u.group.tunnelLogged = true; logEvent(`${u.group.label}: defenders slip away through the tunnel network to fight again.`); }
+    return;
+  }
+}
+
+function steer(u) {
+  const b = u.body, p = b.position;
+  u.cellT = S.terrain.at(p.x, p.y);
+  let gx, gy;
+  if (u.mode === 'form') { const fg = formationGoal(u); gx = fg.x; gy = fg.y; } else { gx = u.goalX; gy = u.goalY; }
+  const dx = gx - p.x, dy = gy - p.y, d = Math.hypot(dx, dy);
+  const sp = CONFIG.BASE_SPEED * u.T.speed * Math.max(0.15, u.cellT.speed) * (u.injured ? CONFIG.INJURED_SPEED : 1) * u.speedMul;
+  let vx = 0, vy = 0;
+  if (d > 2 && !(u.stand && d < 14)) { const s = Math.min(sp, d * 0.15); vx = dx / d * s; vy = dy / d * s; }
+  const v = b.velocity;
+  Body.setVelocity(b, { x: v.x + (vx - v.x) * 0.3, y: v.y + (vy - v.y) * 0.3 });
+}
+
+/* =====================================================================
+   10. COMBAT
+   Hit chance = accuracy × range falloff × (1 − target cover) × elevation
+   × injury × moving × morale. A hit is lethal with probability
+   `lethality`, otherwise it wounds (25–55 damage).
+   ===================================================================== */
+function combat(u, dt) {
+  u.cool -= dt;
+  if (u.cool > 0 || u.routing) return;
+  const v = u.target; if (!v || v.dead) return;
+  const d = Math.hypot(v.x - u.x, v.y - u.y);
+  if (u.T.melee > 0 && d <= CONFIG.MELEE_RANGE + u.r + v.r) { melee(u, v); return; }
+  if (!u.armed || u.ammo <= 0 || S.phaseT < u.group.holdFireUntil || !u.losOK) return;
+  if (d > effRange(u, v)) return;
+  fire(u, v, d);
+}
+
+function fire(u, v, d) {
+  const T = u.T;
+  u.ammo--; u.cool = T.fireInterval * rand(0.75, 1.25);
+  if (!S.firstShot) { S.firstShot = true; logEvent('First shots fired.'); }
+  const a = norm(v.x - u.x, v.y - u.y);
+  fxMuzzle(u.x + a.x * u.r, u.y + a.y * u.r, a, T.splash);
+  if (T.splash) return cannonFire(u, v, d);
+  const es = S.terrain.elevAt(u.x, u.y), et = S.terrain.elevAt(v.x, v.y);
+  let p = T.accuracy * (1 - CONFIG.RANGE_FALLOFF * (d / T.range) ** 2);
+  const coverMul = (T.assault && d < CONFIG.CLOSE_ASSAULT) ? CONFIG.CLOSE_ASSAULT_COVER : 1;
+  p *= 1 - v.cellT.cover * coverMul;
+  if (es > et) p *= 1 + CONFIG.ELEV_ACC_BONUS * (es - et); else if (et > es) p *= CONFIG.UPHILL_PENALTY;
+  if (u.injured) p *= CONFIG.INJURED_ACC;
+  if (u.moving) p *= CONFIG.MOVING_ACC;
+  if (v.moving) p *= CONFIG.MOVING_TARGET;
+  p *= 0.6 + 0.4 * clamp(u.morale, 0, 100) / 100;
+  const hit = Math.random() < p;
+  const tx = hit ? v.x : v.x + rand(-14, 14), ty = hit ? v.y : v.y + rand(-14, 14);
+  fxTracer(u.x, u.y, tx, ty);
+  heatAdd(tx, ty, 1);
+  if (hit) damage(v, T.lethality);
+  else { v.suppressedUntil = S.t + CONFIG.SUPPRESS_TIME; v.morale -= CONFIG.MORALE_MISS; fxDust(tx, ty, 1); }
+}
+
+function cannonFire(u, v, d) {
+  const T = u.T, sc = 8 + 30 * d / T.range;
+  const ix = v.x + rand(-sc, sc), iy = v.y + rand(-sc, sc);
+  fxTracer(u.x, u.y, ix, iy);
+  explode(ix, iy, T.splash, T.lethality, u.side === 0 ? 1 : 0, false);
+}
+
+function explode(x, y, r, lethality, targetSide, crater) {
+  fxBlast(x, y, r);
+  heatAdd(x, y, 4);
+  forNear(x, y, r, v => {
+    if (v.dead || (targetSide != null && v.side !== targetSide)) return;
+    if (Math.hypot(v.x - x, v.y - y) > r) return;
+    let p = 0.55 * (1 - v.cellT.cover); if (v.cellT.key === 'bunker') p *= 0.3; // bunkers shrugged off most shelling
+    if (Math.random() < p) damage(v, lethality); else { v.suppressedUntil = S.t + 3; v.morale -= 6; }
+  });
+  if (crater) makeCrater(x, y, r);
+}
+
+function melee(u, v) {
+  u.cool = CONFIG.MELEE_INTERVAL * rand(0.8, 1.2);
+  const p = CONFIG.MELEE_HIT * u.T.melee / Math.max(0.5, v.T.melee) * (u.injured ? 0.6 : 1);
+  if (Math.random() < clamp(p, 0.05, 0.8)) damage(v, 0.3); else v.morale -= 3;
+}
+
+function damage(v, lethality) {
+  if (v.dead) return;
+  v.hitAt = S.t; fxHit(v.x, v.y);
+  v.suppressedUntil = S.t + CONFIG.SUPPRESS_TIME; v.morale -= CONFIG.MORALE_HIT;
+  moralePulse(v.x, v.y, v.side, CONFIG.MORALE_NEAR_HIT, 40);
+  if (Math.random() < lethality) { kill(v); return; }
+  v.health -= rand(CONFIG.NONLETHAL_MIN, CONFIG.NONLETHAL_MAX);
+  if (v.health <= 0) { kill(v); return; }
+  if (!v.injured && v.health <= CONFIG.INJURED_HEALTH) {
+    v.injured = true; v.wasInjured = true;
+    if (Math.random() < v.T.injuredRetreat) v.withdrawing = true;
+  }
+  if (v.armed && Math.random() < CONFIG.DROP_WEAPON_CHANCE) { v.armed = false; addDrop(v.x, v.y, v.ammo); v.ammo = 0; }
+}
+
+// Dead soldiers are removed from the physics world (they no longer move or collide)
+// and kept as static, faded map markers in S.dead.
+function kill(v) {
+  v.dead = true; v.health = 0; v.diedAt = S.t; v.inRange = false;
+  Composite.remove(S.engine.world, v.body);
+  S.dead.push(v);
+  if (v.armed && !v.T.splash) addDrop(v.x, v.y, v.ammo);
+  moralePulse(v.x, v.y, v.side, CONFIG.MORALE_NEAR_DEATH, 50);
+  const st = S.stats[v.side]; st.killed++;
+  const frac = st.killed / Math.max(1, st.spawned);
+  for (const m of [0.1, 0.25, 0.5, 0.75]) if (frac >= m && !st.milestones[m]) {
+    st.milestones[m] = true; logEvent(`${S.sides[v.side].name}: ${Math.round(m * 100)}% of the force committed so far has been killed.`);
+  }
+}
+function addDrop(x, y, ammo) { S.drops.push({ x, y, ammo: Math.min(ammo, 15) }); if (S.drops.length > CONFIG.MAX_DROPS) S.drops.shift(); }
+function moralePulse(x, y, side, amt, r) { forNear(x, y, r, w => { if (w.side === side) w.morale -= amt; }); }
+
+/* ---------- naval / air bombardment (preset-driven) ---------- */
+function bombardStep(dt) {
+  const B = S.phase.bombardment; if (!B) return;
+  const pre = S.phaseT < B.preUntil;
+  S.bombAcc += (pre ? B.preRate : B.rate) * dt;
+  while (S.bombAcc >= 1) {
+    S.bombAcc -= 1;
+    let x, y;
+    if (pre && S.landCells.length) { [x, y] = S.landCells[Math.floor(Math.random() * S.landCells.length)]; }
+    else {
+      const foes = S.units.filter(u => !u.dead && u.side === B.side);
+      if (!foes.length) return;
+      const f = foes[Math.floor(Math.random() * foes.length)]; x = f.x + rand(-60, 60); y = f.y + rand(-60, 60);
+    }
+    let friendly = false; forNear(x, y, B.avoidR, v => { if (v.side === B.avoidSide && Math.hypot(v.x - x, v.y - y) < B.avoidR) friendly = true; });
+    if (friendly) continue;
+    S.fx.shells.push({ x, y, at: S.t + 0.6, r: B.radius, lethality: B.lethality, side: B.side });
+  }
+  for (let i = S.fx.shells.length - 1; i >= 0; i--) {
+    const s = S.fx.shells[i];
+    if (S.t >= s.at) { S.fx.shells.splice(i, 1); explode(s.x, s.y, s.r, s.lethality, null, true); }
+  }
+}
+function makeCrater(x, y, r) {
+  const tr = S.terrain, C = tr.C, rr = r * 0.6;
+  for (let yy = y - rr; yy <= y + rr; yy += C) for (let xx = x - rr; xx <= x + rr; xx += C) {
+    if (Math.hypot(xx - x, yy - y) > rr) continue;
+    const i = tr.idx(xx, yy); if (CRATERABLE.has(tr.type[i])) tr.setCell(i, 'crater');
+  }
+  drawCraterDecal(x, y, r * 0.7);
+}
+/* =====================================================================
+   11. PHASES, EVENTS & THE MAIN SIMULATION STEP
+   ===================================================================== */
+function simClock() {
+  const c = S.phase.clock, ms = Date.UTC(c.start[0], c.start[1], c.start[2], c.start[3], c.start[4]) + S.phaseT * c.minPerSec * 60000;
+  const d = new Date(ms), M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const hh = String(d.getUTCHours()).padStart(2, '0'), mm = String(d.getUTCMinutes()).padStart(2, '0');
+  let s = `${M[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()} · ${hh}:${mm}`;
+  if (c.dday) s += ` · D+${Math.floor((ms - Date.UTC(c.start[0], c.start[1], c.start[2])) / 864e5)}`;
+  return { full: s, short: c.minPerSec > 60 ? `${M[d.getUTCMonth()]} ${d.getUTCDate()} ${hh}:${mm}` : `${hh}:${mm}` };
+}
+function logEvent(text, cls) {
+  S.log.unshift({ time: S.phase ? simClock().short : '', text, cls });
+  if (S.log.length > 200) S.log.pop();
+  UI.logDirty = true;
+}
+
+function startPhase(i) {
+  const P = S.preset, ph = P.phases[i];
+  if (i > 0 && ph.clear) clearUnits();
+  S.phaseIdx = i; S.phase = ph; S.phaseT = 0; S.bombAcc = 0; S.fx.shells = [];
+  S.pending = (ph.spawns || []).filter(d => d.spawnAt);
+  S.phaseEvents = (ph.events || []).map(e => Object.assign({ done: false }, e));
+  S.captures = (ph.captures || []).map(c => Object.assign({ done: false }, c));
+  S.supply = ph.supply || [];
+  S.phaseSpawned = [0, 0];
+  logEvent(`${ph.name}`, 'phase');
+  for (const d of (ph.spawns || [])) if (!d.spawnAt) { spawnGroup(d); S.phaseSpawned[d.side]++; }
+  if (S.toggles.follow) S.camTarget = fitView(ph.view);
+  showBanner(ph.name, simClock().full);
+}
+function clearUnits() {
+  for (const u of S.units) {
+    if (u.dead) continue;
+    if (u.wasInjured) S.stats[u.side].wounded++;
+    Composite.remove(S.engine.world, u.body);
+  }
+  S.units = []; S.groups = []; S.groupByKey = {}; S.drops = []; S.selected = null;
+}
+
+function phaseUpdate() {
+  for (let i = S.pending.length - 1; i >= 0; i--) {
+    const d = S.pending[i];
+    if (S.phaseT >= d.spawnAt) { S.pending.splice(i, 1); spawnGroup(d); S.phaseSpawned[d.side]++; if (d.arriveText) logEvent(d.arriveText); }
+  }
+  for (const e of S.phaseEvents) if (!e.done && S.phaseT >= e.t) { e.done = true; logEvent(e.text); }
+}
+
+function transitionMet(g, w) {
+  if (w.time != null && S.phaseT >= w.time) return true;
+  if (w.lossFrac != null && (g.initial - g.alive) / g.initial >= w.lossFrac) return true;
+  if (w.groupPassed) { const o = S.groupByKey[w.groupPassed.key]; if (o && (o.anchor.x >= w.groupPassed.x || o.alive === 0)) return true; }
+  return false;
+}
+
+// every 0.5 s: group aggregates, transitions, objectives, hunting, territory, end conditions
+function slowTick() {
+  for (const g of S.groups) {
+    let alive = 0, eng = 0, err = 0, cx = 0, cy = 0, rout = 0;
+    for (const u of g.units) {
+      if (u.dead) continue;
+      alive++; if (u.inRange) eng++; if (u.routing) rout++;
+      cx += u.x; cy += u.y;
+      if (u.mode === 'form') { const f = formationGoal(u); err += Math.hypot(f.x - u.x, f.y - u.y); }
+    }
+    g.alive = alive; g.engaged = alive ? eng / alive : 0; g.err = alive ? err / alive : 0;
+    if (alive) { g.cx = cx / alive; g.cy = cy / alive; }
+    if (alive > 3 && rout / alive > 0.5 && !g.routLogged) { g.routLogged = true; logEvent(`${g.label} breaks and runs.`); }
+    if (rout / Math.max(1, alive) < 0.2) g.routLogged = false;
+    g.units = g.units.filter(u => !u.dead);
+    for (const tr of g.transitions) {
+      if (tr.done || !transitionMet(g, tr.when)) continue;
+      tr.done = true; const to = tr.to;
+      if (to.behavior) g.behavior = to.behavior;
+      if (to.path) { g.path = to.path.map(p => v2(p[0], p[1])); g.pathIdx = 0; }
+      if (to.formation) setFormation(g, to.formation, to);
+      if (to.behavior === 'retreat' || to.behavior === 'march') { if (to.path) g.rally = Object.assign({}, g.path[g.path.length - 1]); }
+      if (tr.log) logEvent(tr.log);
+    }
+    if (g.behavior === 'hunt') { // head for the nearest surviving enemy
+      let best = null, bd = Infinity;
+      for (const v of S.units) { if (v.dead || v.side === g.side) continue; const d = (v.x - g.anchor.x) ** 2 + (v.y - g.anchor.y) ** 2; if (d < bd) { bd = d; best = v; } }
+      g.huntTarget = best ? v2(best.x, best.y) : null;
+    }
+  }
+  S.units = S.units.filter(u => !u.dead);
+  // objectives
+  for (const c of S.captures) {
+    if (c.done) continue;
+    const z = S.preset.zones[c.zone], [zx, zy, zr] = z.circle;
+    let own = 0, foe = 0;
+    forNear(zx, zy, zr, u => { if (Math.hypot(u.x - zx, u.y - zy) <= zr) { if (u.side === c.side) own++; else foe++; } });
+    if (own > 0 && (!c.clear || foe === 0)) {
+      c.done = true; logEvent(c.text);
+      if (c.flag) S.flags.push({ x: zx, y: zy, side: c.side });
+    }
+  }
+  computeInfluence();
+  if (S.heat) for (let i = 0; i < S.heat.length; i++) S.heat[i] *= 0.97;
+  checkEnd();
+}
+
+function checkEnd() {
+  const e = S.phase.end || {}; let reason = null;
+  if (e.time && S.phaseT >= e.time) reason = e.timeText || 'Time is up for this phase.';
+  if (e.reach) {
+    let alive = 0, inZ = 0; const [zx, zy, zr] = S.preset.zones[e.reach.zone].circle;
+    for (const u of S.units) if (!u.dead && u.side === e.reach.side) { alive++; if (Math.hypot(u.x - zx, u.y - zy) <= zr) inZ++; }
+    if (alive && inZ / alive >= e.reach.frac && !S.pending.some(d => d.side === e.reach.side)) reason = e.reach.text;
+  }
+  for (const s of [0, 1]) {
+    const alive = S.units.some(u => !u.dead && u.side === s);
+    if (!alive && S.phaseSpawned[s] > 0 && !S.pending.some(d => d.side === s)) reason = `${S.sides[s].name}: no effective force remains on the field.`;
+  }
+  if (!reason) return;
+  logEvent(reason);
+  if (S.phase.note) logEvent(S.phase.note);
+  if (S.phaseIdx < S.preset.phases.length - 1) startPhase(S.phaseIdx + 1);
+  else finishBattle(reason);
+}
+
+function finishBattle(reason) {
+  for (const u of S.units) if (!u.dead && u.wasInjured) S.stats[u.side].wounded++;
+  S.running = false; S.ended = true; S.endReason = reason;
+  UI.updateButtons(); showSummary();
+}
+
+function simStep() {
+  const dt = CONFIG.STEP / 1000;
+  S.t += dt; S.phaseT += dt; S.stepCount++;
+  hashBuild();
+  phaseUpdate();
+  for (const g of S.groups) groupMove(g, dt);
+  for (const u of S.units) {
+    if (u.dead) continue;
+    if (S.t >= u.nextThink) { think(u); u.nextThink = S.t + CONFIG.THINK_MIN + Math.random() * CONFIG.THINK_JITTER; }
+    steer(u);
+    combat(u, dt);
+  }
+  bombardStep(dt);
+  Engine.update(S.engine, CONFIG.STEP);
+  fxStep(dt);
+  if (S.toggles.trails && S.stepCount % 8 === 0) trailsStep();
+  if (S.stepCount % 30 === 0 && !S.ended) slowTick();
+}
+
+/* =====================================================================
+   12. EFFECTS — particles, tracers, craters, heat & territory grids
+   ===================================================================== */
+function pushP(p) { if (S.fx.particles.length < CONFIG.MAX_PARTICLES) S.fx.particles.push(p); }
+function fxMuzzle(x, y, a, big) {
+  if (!S.toggles.effects) return;
+  const sm = S.preset.smoke;
+  pushP({ x, y, vx: 0, vy: 0, life: big ? 0.2 : 0.08, max: big ? 0.2 : 0.08, r: big ? 7 : 2.6, gr: 0, k: 'flash' });
+  if (Math.random() < sm || big) pushP({ x: x + a.x * 4, y: y + a.y * 4, vx: a.x * 0.12 + rand(-0.05, 0.05), vy: a.y * 0.12 + rand(-0.05, 0.05), life: rand(1.4, 2.4) * (big ? 1.6 : 1), max: 2.4 * (big ? 1.6 : 1), r: big ? 6 : 2, gr: big ? 14 : 6 * sm, k: 'smoke' });
+}
+function fxTracer(x1, y1, x2, y2) {
+  if (!S.toggles.effects || S.fx.tracers.length >= CONFIG.MAX_TRACERS) return;
+  S.fx.tracers.push({ x1, y1, x2, y2, life: 0.14, max: 0.14 });
+}
+function fxHit(x, y) {
+  if (!S.toggles.effects) return;
+  for (let i = 0; i < 5; i++) pushP({ x, y, vx: rand(-0.6, 0.6), vy: rand(-0.6, 0.6), life: 0.35, max: 0.35, r: 1.4, gr: 0, k: 'spark' });
+}
+function fxDust(x, y, n) {
+  if (!S.toggles.effects) return;
+  for (let i = 0; i < n; i++) pushP({ x: x + rand(-3, 3), y: y + rand(-3, 3), vx: rand(-0.1, 0.1), vy: rand(-0.1, 0.1), life: 0.8, max: 0.8, r: 1.5, gr: 4, k: 'dust' });
+}
+function fxBlast(x, y, r) {
+  if (!S.toggles.effects) return;
+  pushP({ x, y, vx: 0, vy: 0, life: 0.3, max: 0.3, r: r * 0.4, gr: r * 0.8, k: 'blast' });
+  for (let i = 0; i < 8; i++) pushP({ x, y, vx: rand(-1.2, 1.2), vy: rand(-1.2, 1.2), life: 0.6, max: 0.6, r: 1.6, gr: 0, k: 'debris' });
+  for (let i = 0; i < 3; i++) pushP({ x: x + rand(-r / 3, r / 3), y: y + rand(-r / 3, r / 3), vx: rand(-0.08, 0.08), vy: rand(-0.08, 0.08), life: rand(2.5, 4), max: 4, r: r * 0.3, gr: r * 1.1, k: 'smokeDark' });
+}
+function fxStep(dt) {
+  const P = S.fx.particles;
+  for (let i = P.length - 1; i >= 0; i--) {
+    const p = P[i]; p.life -= dt; if (p.life <= 0) { P[i] = P[P.length - 1]; P.pop(); continue; }
+    p.x += p.vx; p.y += p.vy; p.vx *= 0.96; p.vy *= 0.96;
+  }
+  const Tr = S.fx.tracers;
+  for (let i = Tr.length - 1; i >= 0; i--) { Tr[i].life -= dt; if (Tr[i].life <= 0) { Tr[i] = Tr[Tr.length - 1]; Tr.pop(); } }
+}
+
+function inflIdx(x, y) {
+  const IC = CONFIG.INFL_CELL;
+  return clamp(Math.floor(y / IC), 0, S.igh - 1) * S.igw + clamp(Math.floor(x / IC), 0, S.igw - 1);
+}
+function heatAdd(x, y, w) { if (S.heat) S.heat[inflIdx(x, y)] += w; }
+
+// Territory: each living soldier projects influence (+ side 0, − side 1) onto a coarse grid;
+// where the sign flips between strongly held neighbouring cells we mark the front line.
+function computeInfluence() {
+  const I = S.infl, R = CONFIG.INFL_RADIUS, IC = CONFIG.INFL_CELL, gw = S.igw, gh = S.igh;
+  I.fill(0);
+  for (const u of S.units) {
+    if (u.dead) continue;
+    const cx = Math.floor(u.x / IC), cy = Math.floor(u.y / IC), s = u.side === 0 ? 1 : -1;
+    for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+      const x = cx + dx, y = cy + dy; if (x < 0 || y < 0 || x >= gw || y >= gh) continue;
+      const d = Math.hypot(dx, dy); if (d > R + 0.5) continue;
+      I[y * gw + x] += s * (1 - d / (R + 1));
+    }
+  }
+  const F = []; const th = 0.4;
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const v = I[y * gw + x]; if (Math.abs(v) < th) continue;
+    if (x + 1 < gw) { const w = I[y * gw + x + 1]; if (Math.abs(w) >= th && Math.sign(w) !== Math.sign(v)) F.push([(x + 1) * IC, (y + 0.5) * IC]); }
+    if (y + 1 < gh) { const w = I[(y + 1) * gw + x]; if (Math.abs(w) >= th && Math.sign(w) !== Math.sign(v)) F.push([(x + 0.5) * IC, (y + 1) * IC]); }
+  }
+  S.front = F;
+  S.inflDirty = true;
+}
+/* =====================================================================
+   13. RENDERING
+   ===================================================================== */
+const view = document.getElementById('view');
+const VC = view.getContext('2d');
+let DPR = 1;
+
+const hexRGB = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const mix = (h, w, t) => { const a = hexRGB(h), b = hexRGB(w); return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`; };
+const tColor = key => (S.preset.palette && S.preset.palette[key]) || TERRAIN[key].color;
+
+// Terrain is drawn once to an offscreen world-sized canvas: a 1-px-per-cell image scaled up with
+// bilinear smoothing (soft blended zones), then grain and per-cell map symbols on top.
+function buildTerrainCanvas() {
+  const tr = S.terrain, C = tr.C;
+  const sm = document.createElement('canvas'); sm.width = tr.gw; sm.height = tr.gh;
+  const sctx = sm.getContext('2d'), img = sctx.createImageData(tr.gw, tr.gh);
+  const rgb = TKEYS.map(k => hexRGB(tColor(k)));
+  for (let i = 0; i < tr.type.length; i++) {
+    const c = rgb[tr.type[i]], n = (hash01(i) - 0.5) * 12 - tr.elev[i] * 7;
+    img.data[i * 4] = c[0] + n; img.data[i * 4 + 1] = c[1] + n; img.data[i * 4 + 2] = c[2] + n; img.data[i * 4 + 3] = 255;
+  }
+  sctx.putImageData(img, 0, 0);
+  const big = S.terrainCanvas || (S.terrainCanvas = document.createElement('canvas'));
+  big.width = tr.gw * C; big.height = tr.gh * C;
+  const g = big.getContext('2d');
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  g.drawImage(sm, 0, 0, big.width, big.height);
+  const r = rng(7);
+  for (let k = 0, n = big.width * big.height / 160; k < n; k++) { // paper grain
+    g.fillStyle = r() < 0.5 ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,240,0.06)';
+    g.fillRect(r() * big.width, r() * big.height, 1.5, 1.5);
+  }
+  for (let i = 0; i < tr.type.length; i++) decorateCell(g, i, TKEYS[tr.type[i]], tr.elev[i]);
+}
+function decorateCell(g, i, key, elev) {
+  const tr = S.terrain, C = tr.C, [cx, cy] = tr.center(i), h = k => hash01(i * 13 + k);
+  if (elev > 0 && h(9) < (elev > 1 ? 0.7 : 0.4) && key !== 'bunker') { // hachure ticks for high ground
+    g.strokeStyle = elev > 1 ? 'rgba(60,40,20,0.45)' : 'rgba(80,60,30,0.3)'; g.lineWidth = 1;
+    const x = cx + (h(1) - 0.5) * 10, y = cy + (h(2) - 0.5) * 10;
+    g.beginPath(); g.moveTo(x - 3, y + 2); g.lineTo(x, y - 2); g.lineTo(x + 3, y + 2); g.stroke();
+  }
+  switch (key) {
+    case 'forest':
+      for (let k = 0; k < 2; k++) {
+        const x = cx + (h(k * 3) - 0.5) * 14, y = cy + (h(k * 3 + 1) - 0.5) * 14, rr = 4 + h(k * 3 + 2) * 3;
+        g.fillStyle = 'rgba(52,66,36,0.75)'; g.beginPath(); g.arc(x, y, rr, 0, 7); g.fill();
+        g.fillStyle = 'rgba(140,155,95,0.35)'; g.beginPath(); g.arc(x - 1, y - 1, rr * 0.45, 0, 7); g.fill();
+      } break;
+    case 'wall':
+      g.fillStyle = 'rgba(90,86,78,0.9)';
+      for (let k = 0; k < 4; k++) g.fillRect(cx - 9 + k * 5 + h(k) * 2, cy - 2 + h(k + 4) * 3, 4, 3);
+      break;
+    case 'town':
+      g.fillStyle = 'rgba(110,70,45,0.85)'; g.fillRect(cx - 6, cy - 5, 12, 10);
+      g.strokeStyle = 'rgba(60,40,25,0.7)'; g.lineWidth = 1; g.strokeRect(cx - 6, cy - 5, 12, 10);
+      g.beginPath(); g.moveTo(cx - 6, cy); g.lineTo(cx + 6, cy); g.stroke(); break;
+    case 'bunker':
+      g.fillStyle = 'rgba(55,52,46,0.95)'; g.beginPath(); g.arc(cx, cy, 6.5, 0, 7); g.fill();
+      g.strokeStyle = 'rgba(15,12,10,0.9)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(cx - 4, cy - 1); g.lineTo(cx + 4, cy - 1); g.stroke(); break;
+    case 'water':
+      if (h(0) < 0.25) { g.strokeStyle = 'rgba(220,235,240,0.25)'; g.lineWidth = 1; g.beginPath(); g.arc(cx, cy + 3, 4, 3.6, 5.8); g.stroke(); } break;
+    case 'sand':
+      g.fillStyle = 'rgba(30,28,25,0.25)'; for (let k = 0; k < 4; k++) g.fillRect(cx + (h(k) - 0.5) * 18, cy + (h(k + 5) - 0.5) * 18, 1.2, 1.2); break;
+    case 'rough':
+      g.fillStyle = 'rgba(60,52,40,0.45)'; for (let k = 0; k < 3; k++) { g.beginPath(); g.arc(cx + (h(k) - 0.5) * 16, cy + (h(k + 5) - 0.5) * 16, 1.5 + h(k + 8) * 1.5, 0, 7); g.fill(); } break;
+    case 'bridge':
+      g.strokeStyle = 'rgba(70,50,30,0.7)'; g.lineWidth = 1; for (let k = -8; k <= 8; k += 4) { g.beginPath(); g.moveTo(cx + k, cy - 9); g.lineTo(cx + k, cy + 9); g.stroke(); } break;
+    case 'crater': drawCraterDecal(cx, cy, 7, g); break;
+  }
+}
+function drawCraterDecal(x, y, r, g = S.terrainCanvas.getContext('2d')) {
+  const gr = g.createRadialGradient(x, y, 0, x, y, r);
+  gr.addColorStop(0, 'rgba(35,30,25,0.55)'); gr.addColorStop(0.7, 'rgba(70,62,52,0.35)'); gr.addColorStop(1, 'rgba(170,160,140,0.25)');
+  g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+}
+
+function resizeView() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  const r = view.getBoundingClientRect();
+  view.width = Math.max(1, Math.round(r.width * DPR)); view.height = Math.max(1, Math.round(r.height * DPR));
+}
+function fitView(v) {
+  const r = view.getBoundingClientRect();
+  const z = Math.min(r.width / v[2], r.height / v[3]) * 0.95;
+  return { x: v[0] + v[2] / 2, y: v[1] + v[3] / 2, z };
+}
+const screenToWorld = (sx, sy) => { const r = view.getBoundingClientRect(); return v2((sx - r.width / 2) / S.cam.z + S.cam.x, (sy - r.height / 2) / S.cam.z + S.cam.y); };
+const worldToScreen = (wx, wy) => { const r = view.getBoundingClientRect(); return v2((wx - S.cam.x) * S.cam.z + r.width / 2, (wy - S.cam.y) * S.cam.z + r.height / 2); };
+
+function drawOverlayGrid(kind) {
+  const gw = S.igw, gh = S.igh;
+  const cv = S.ovCanvas || (S.ovCanvas = document.createElement('canvas'));
+  if (cv.width !== gw || cv.height !== gh) { cv.width = gw; cv.height = gh; }
+  const c = cv.getContext('2d'), img = c.createImageData(gw, gh), d = img.data;
+  if (kind === 'territory') {
+    const a = hexRGB(S.sides[0].color), b = hexRGB(S.sides[1].color);
+    for (let i = 0; i < S.infl.length; i++) {
+      const v = S.infl[i], col = v > 0 ? a : b, al = Math.min(0.3, Math.abs(v) * 0.05);
+      d[i * 4] = col[0]; d[i * 4 + 1] = col[1]; d[i * 4 + 2] = col[2]; d[i * 4 + 3] = al * 255;
+    }
+  } else {
+    for (let i = 0; i < S.heat.length; i++) {
+      const v = Math.min(1, S.heat[i] / 30);
+      d[i * 4] = 230; d[i * 4 + 1] = 140 - v * 120; d[i * 4 + 2] = 20; d[i * 4 + 3] = Math.min(0.65, v) * 255;
+    }
+  }
+  c.putImageData(img, 0, 0);
+  VC.imageSmoothingEnabled = true;
+  VC.drawImage(cv, 0, 0, gw * CONFIG.INFL_CELL, gh * CONFIG.INFL_CELL);
+}
+
+function trailsStep() {
+  const tc = S.trailCanvas; if (!tc) return;
+  const g = tc.getContext('2d');
+  g.globalCompositeOperation = 'destination-out'; g.fillStyle = 'rgba(0,0,0,0.035)'; g.fillRect(0, 0, tc.width, tc.height);
+  g.globalCompositeOperation = 'source-over';
+  for (let s = 0; s < 2; s++) {
+    g.fillStyle = S.sides[s].color; g.globalAlpha = 0.5;
+    for (const u of S.units) if (!u.dead && u.side === s) g.fillRect(u.x / 3 - 0.5, u.y / 3 - 0.5, 1.2, 1.2);
+  }
+  g.globalAlpha = 1;
+}
+
+function render() {
+  const w = view.width, h = view.height, P = S.preset;
+  VC.setTransform(1, 0, 0, 1, 0, 0);
+  VC.fillStyle = tColor(P.base === 'water' ? 'water' : 'open'); VC.fillRect(0, 0, w, h);
+  const z = S.cam.z * DPR;
+  VC.setTransform(z, 0, 0, z, w / 2 - S.cam.x * z, h / 2 - S.cam.y * z);
+  VC.imageSmoothingEnabled = true;
+  VC.drawImage(S.terrainCanvas, 0, 0);
+  const px = 1 / S.cam.z; // one screen pixel in world units
+
+  if (S.toggles.territory) drawOverlayGrid('territory');
+  if (S.toggles.heat) drawOverlayGrid('heat');
+  if (S.toggles.trails && S.trailCanvas) VC.drawImage(S.trailCanvas, 0, 0, S.trailCanvas.width * 3, S.trailCanvas.height * 3);
+
+  // deployment zones before the start
+  if (!S.started) for (const g of S.groups) {
+    const r = Math.max(40, Math.sqrt(g.initial) * 9);
+    VC.fillStyle = S.sides[g.side].color; VC.globalAlpha = 0.12; VC.beginPath(); VC.arc(g.cx, g.cy, r, 0, 7); VC.fill(); VC.globalAlpha = 1;
+  }
+  // objective zones
+  VC.font = `${12 * px}px Georgia, serif`; VC.textAlign = 'center';
+  const active = new Set([...(S.phase.captures || []).map(c => c.zone), S.phase.end && S.phase.end.reach && S.phase.end.reach.zone]);
+  for (const [k, zn] of Object.entries(P.zones || {})) {
+    const [x, y, r] = zn.circle, on = active.has(k);
+    VC.setLineDash([6 * px, 5 * px]); VC.lineWidth = (on ? 1.6 : 1) * px;
+    VC.strokeStyle = on ? 'rgba(70,40,20,0.75)' : 'rgba(70,40,20,0.3)';
+    VC.beginPath(); VC.arc(x, y, r, 0, 7); VC.stroke(); VC.setLineDash([]);
+    VC.fillStyle = on ? 'rgba(45,30,15,0.9)' : 'rgba(45,30,15,0.5)';
+    VC.fillText(zn.name, x, y - r - 4 * px);
+  }
+  // supply points
+  for (const s of S.supply) {
+    if (S.phaseT < (s.from || 0)) continue;
+    VC.fillStyle = '#6b5232'; VC.fillRect(s.x - 5, s.y - 5, 10, 10); VC.strokeStyle = '#f2e6c8'; VC.lineWidth = 1;
+    VC.strokeRect(s.x - 5, s.y - 5, 10, 10); VC.fillStyle = 'rgba(40,30,15,.8)'; VC.fillText('Supply', s.x, s.y + 16);
+  }
+  // fallen weapons
+  VC.strokeStyle = 'rgba(40,30,20,0.55)'; VC.lineWidth = 1; VC.beginPath();
+  for (const d of S.drops) { VC.moveTo(d.x - 3, d.y + 2); VC.lineTo(d.x + 3, d.y - 2); } VC.stroke();
+  // dead: faded static markers
+  for (let s = 0; s < 2; s++) {
+    VC.fillStyle = S.sides[s].color; VC.globalAlpha = 0.28; VC.beginPath();
+    for (const u of S.dead) if (u.side === s) { VC.moveTo(u.x + 3, u.y); VC.arc(u.x, u.y, 3, 0, 7); }
+    VC.fill();
+  }
+  VC.globalAlpha = 1;
+  // pending shells: aiming rings
+  VC.strokeStyle = 'rgba(120,20,10,0.5)'; VC.lineWidth = px;
+  for (const s of S.fx.shells) { VC.beginPath(); VC.arc(s.x, s.y, s.r * (s.at - S.t) / 0.6 + 2, 0, 7); VC.stroke(); }
+  // tracers
+  VC.lineWidth = Math.max(0.6, px * 0.8);
+  for (const t of S.fx.tracers) { VC.strokeStyle = `rgba(255,236,190,${0.55 * t.life / t.max})`; VC.beginPath(); VC.moveTo(t.x1, t.y1); VC.lineTo(t.x2, t.y2); VC.stroke(); }
+  // living soldiers
+  const minR = 1.7 * px;
+  for (let s = 0; s < 2; s++) {
+    const col = S.sides[s].color, inj = mix(col, '#ffffff', 0.5);
+    for (const pass of [0, 1]) {
+      VC.fillStyle = pass ? inj : col; VC.beginPath();
+      for (const u of S.units) {
+        if (u.dead || u.side !== s || (pass ? !u.injured : u.injured) || !u.armed) continue;
+        const r = Math.max(u.r, minR); VC.moveTo(u.x + r, u.y); VC.arc(u.x, u.y, r, 0, 7);
+      }
+      VC.fill();
+    }
+    VC.strokeStyle = col; VC.lineWidth = Math.max(1.4, px); VC.beginPath(); // unarmed: hollow rings
+    for (const u of S.units) if (!u.dead && u.side === s && !u.armed) { const r = Math.max(u.r, minR) - 0.7; VC.moveTo(u.x + r, u.y); VC.arc(u.x, u.y, r, 0, 7); }
+    VC.stroke();
+  }
+  if (S.cam.z > 1.2) { // crisp outlines and routing markers when zoomed in
+    VC.strokeStyle = 'rgba(20,15,10,0.55)'; VC.lineWidth = 0.6; VC.beginPath();
+    for (const u of S.units) if (!u.dead && u.armed) { VC.moveTo(u.x + u.r, u.y); VC.arc(u.x, u.y, u.r, 0, 7); }
+    VC.stroke();
+  }
+  VC.strokeStyle = '#fff8e0'; VC.lineWidth = Math.max(1, px); VC.beginPath();
+  for (const u of S.units) if (!u.dead && S.t - u.hitAt < 0.25) { VC.moveTo(u.x + u.r + 2, u.y); VC.arc(u.x, u.y, u.r + 2, 0, 7); }
+  VC.stroke();
+  // particles
+  for (const p of S.fx.particles) {
+    const f = p.life / p.max, r = p.r + p.gr * (1 - f);
+    switch (p.k) {
+      case 'flash': VC.fillStyle = `rgba(255,214,120,${f})`; break;
+      case 'smoke': VC.fillStyle = `rgba(236,233,224,${0.42 * f})`; break;
+      case 'smokeDark': VC.fillStyle = `rgba(70,64,58,${0.4 * f})`; break;
+      case 'dust': VC.fillStyle = `rgba(120,100,70,${0.45 * f})`; break;
+      case 'spark': VC.fillStyle = `rgba(200,40,30,${f})`; break;
+      case 'blast': VC.fillStyle = `rgba(255,150,50,${0.8 * f})`; break;
+      default: VC.fillStyle = `rgba(50,40,30,${f})`;
+    }
+    VC.beginPath(); VC.arc(p.x, p.y, r, 0, 7); VC.fill();
+  }
+  // front line
+  if (S.toggles.territory && S.front.length) {
+    VC.fillStyle = 'rgba(40,20,10,0.6)';
+    const r = Math.max(1.6, 1.6 * px); VC.beginPath();
+    for (const [x, y] of S.front) { VC.moveTo(x + r, y); VC.arc(x, y, r, 0, 7); } VC.fill();
+  }
+  // flags
+  for (const f of S.flags) {
+    VC.strokeStyle = '#2a2018'; VC.lineWidth = 2 * px; VC.beginPath(); VC.moveTo(f.x, f.y); VC.lineTo(f.x, f.y - 30 * px); VC.stroke();
+    VC.fillStyle = S.sides[f.side].color; VC.fillRect(f.x, f.y - 30 * px, 16 * px, 10 * px);
+  }
+  // group labels
+  if (S.toggles.labels) {
+    VC.font = `${11 * px}px Georgia, serif`; VC.textAlign = 'center';
+    for (const g of S.groups) {
+      if (g.alive < 2) continue;
+      const tx = g.cx, ty = g.cy - 18 * px - (g.side ? 14 * px : 0), wtxt = VC.measureText(g.label).width;
+      VC.fillStyle = 'rgba(245,239,220,0.75)'; VC.fillRect(tx - wtxt / 2 - 3 * px, ty - 10 * px, wtxt + 6 * px, 13 * px);
+      VC.fillStyle = mix(S.sides[g.side].color, '#000000', 0.35); VC.fillText(g.label, tx, ty);
+    }
+  }
+  // selection
+  const sel = S.selected || S.hover;
+  if (sel) {
+    VC.strokeStyle = '#1b130b'; VC.lineWidth = 1.5 * px; VC.beginPath(); VC.arc(sel.x, sel.y, sel.r + 4 * px, 0, 7); VC.stroke();
+    if (!sel.dead && sel.target && !sel.target.dead) {
+      VC.setLineDash([4 * px, 3 * px]); VC.beginPath(); VC.moveTo(sel.x, sel.y); VC.lineTo(sel.target.x, sel.target.y); VC.stroke(); VC.setLineDash([]);
+    }
+  }
+}
+/* =====================================================================
+   14. SETUP / RESET
+   ===================================================================== */
+function defaultCounts(P) {
+  const c = [0, 0];
+  for (const ph of P.phases) for (const d of ph.spawns) c[d.side] += groupSpheres(d, P.scale);
+  return c;
+}
+function loadPreset(id) {
+  const P = PRESETS.find(p => p.id === id) || PRESETS[0];
+  S.preset = P;
+  const dc = defaultCounts(P);
+  S.sides = P.sides.map((s, i) => ({ name: s.name, color: s.color, count: dc[i], def: dc[i] }));
+  const tr = new Terrain(P.world.w, P.world.h, P.base);
+  for (const f of P.terrain) tr.apply(f);
+  S.baseType = tr.type.slice(); S.baseElev = tr.elev.slice();
+  S.terrain = tr;
+  UI.buildSides(); UI.buildInfo(); UI.buildPaintTypes();
+  resetBattle();
+  S.cam = Object.assign({}, fitView(P.phases[0].view)); S.camTarget = null;
+}
+function resetBattle() {
+  const P = S.preset, tr = S.terrain;
+  tr.type.set(S.baseType); tr.elev.set(S.baseElev); // undo craters, keep user painting
+  S.sideMul = S.sides.map(s => s.count / Math.max(1, s.def));
+  S.engine = Engine.create({ enableSleeping: false, positionIterations: 4, velocityIterations: 3 });
+  S.engine.gravity.x = 0; S.engine.gravity.y = 0; // top-down battlefield: no gravity
+  buildStatics();
+  hashInit(P.world.w, P.world.h);
+  S.occ = new Uint16Array(tr.gw * tr.gh);
+  S.igw = Math.ceil(P.world.w / CONFIG.INFL_CELL); S.igh = Math.ceil(P.world.h / CONFIG.INFL_CELL);
+  S.infl = new Float32Array(S.igw * S.igh); S.heat = new Float32Array(S.igw * S.igh);
+  S.trailCanvas = document.createElement('canvas'); S.trailCanvas.width = Math.ceil(P.world.w / 3); S.trailCanvas.height = Math.ceil(P.world.h / 3);
+  S.units = []; S.dead = []; S.groups = []; S.groupByKey = {}; S.drops = []; S.flags = []; S.front = [];
+  S.fx = { particles: [], tracers: [], shells: [] };
+  S.t = 0; S.stepCount = 0; S.running = false; S.started = false; S.ended = false; S.firstShot = false; S.selected = null; S.hover = null;
+  S.stats = [0, 1].map(() => ({ spawned: 0, killed: 0, wounded: 0, milestones: {} }));
+  S.log = [];
+  scanCells();
+  buildTerrainCanvas();
+  startPhase(0);
+  hashBuild(); computeInfluence();
+  for (const g of S.groups) { g.cx = g.anchor.x; g.cy = g.anchor.y; }
+  document.getElementById('modal').style.display = 'none';
+  UI.buildLegend(); UI.updateButtons(); UI.logDirty = true; UI.refresh();
+}
+function scanCells() {
+  const tr = S.terrain; S.bunkerCells = []; S.landCells = [];
+  for (let i = 0; i < tr.type.length; i++) {
+    if (tr.type[i] === TI.bunker) S.bunkerCells.push(tr.center(i));
+    if (!TL[tr.type[i]].impassable) S.landCells.push(tr.center(i));
+  }
+}
+// impassable cells → static rectangles (merged into horizontal runs) + world border walls
+function buildStatics() {
+  const tr = S.terrain, C = tr.C, world = S.engine.world;
+  for (const b of S.statics) Composite.remove(world, b);
+  S.statics = [];
+  for (let y = 0; y < tr.gh; y++) {
+    let x = 0;
+    while (x < tr.gw) {
+      if (!TL[tr.type[y * tr.gw + x]].impassable) { x++; continue; }
+      const x0 = x; while (x < tr.gw && TL[tr.type[y * tr.gw + x]].impassable) x++;
+      S.statics.push(Bodies.rectangle((x0 + x) / 2 * C, (y + 0.5) * C, (x - x0) * C, C, { isStatic: true, label: 'terrain' }));
+    }
+  }
+  const W = tr.gw * C, H = tr.gh * C, T = 200;
+  S.statics.push(Bodies.rectangle(W / 2, -T / 2, W + 2 * T, T, { isStatic: true }), Bodies.rectangle(W / 2, H + T / 2, W + 2 * T, T, { isStatic: true }),
+    Bodies.rectangle(-T / 2, H / 2, T, H + 2 * T, { isStatic: true }), Bodies.rectangle(W + T / 2, H / 2, T, H + 2 * T, { isStatic: true }));
+  Composite.add(world, S.statics);
+}
+
+/* =====================================================================
+   15. UI
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = n => Math.round(n).toLocaleString('en-US');
+
+const UI = {
+  logDirty: true,
+  buildInfo() {
+    const P = S.preset;
+    $('info').innerHTML = `<h3>${esc(P.name)}</h3><div class="small">${esc(P.date)} · ${esc(P.location)}</div>
+      <p>${esc(P.summary)}</p><span class="badge">1 sphere = ${P.scale} soldier${P.scale > 1 ? 's' : ''}</span>
+      ${P.phases.length > 1 ? ` <span class="badge">${P.phases.length} phases</span>` : ''}
+      ${P.historical ? `<p class="small">${esc(P.historical.strengths)}</p>` : ''}`;
+  },
+  buildSides() {
+    const box = $('sides'); box.innerHTML = '';
+    S.sides.forEach((s, i) => {
+      const el = document.createElement('div'); el.className = 'side';
+      el.innerHTML = `<div class="row"><input type="color" value="${s.color}" aria-label="Side color"><input type="text" value="${esc(s.name)}" aria-label="Side name"></div>
+        <div class="row"><input type="range" min="1" max="1000" value="${s.count}" aria-label="Spheres"><input type="number" min="1" max="1000" value="${s.count}" aria-label="Spheres"></div>
+        <div class="small men"></div><div class="counts"></div>`;
+      const [col, name] = el.querySelectorAll('input[type=color],input[type=text]');
+      const rng_ = el.querySelector('input[type=range]'), num = el.querySelector('input[type=number]');
+      col.oninput = () => { s.color = col.value; };
+      name.oninput = () => { s.name = name.value || `Side ${i + 1}`; };
+      const setCount = v => { v = clamp(Math.round(+v || 1), 1, 1000); s.count = v; rng_.value = v; num.value = v; resetBattle(); };
+      rng_.onchange = () => setCount(rng_.value); rng_.oninput = () => { num.value = rng_.value; };
+      num.onchange = () => setCount(num.value);
+      s.el = el; box.appendChild(el);
+    });
+  },
+  buildLegend() {
+    const used = new Set(S.terrain.type);
+    $('legend').innerHTML = TKEYS.filter(k => used.has(TI[k])).map(k => {
+      const T = TERRAIN[k];
+      const m = T.impassable ? 'impassable' : `move ×${T.speed.toFixed(2)} · cover ${Math.round(T.cover * 100)}%${T.elev ? ' · high' : ''}${T.los >= 0.2 ? ' · blocks sight' : ''}`;
+      return `<div><i style="background:${tColor(k)}"></i>${esc(T.name)}<span class="m">${m}</span></div>`;
+    }).join('');
+  },
+  buildPaintTypes() { $('paintType').innerHTML = TKEYS.map(k => `<option value="${k}">${esc(TERRAIN[k].name)}</option>`).join(''); },
+  updateButtons() {
+    $('btnStart').textContent = S.ended ? 'Finished' : S.started ? (S.running ? 'Running' : 'Resume') : 'Start';
+    $('btnStart').disabled = S.ended || S.running;
+    $('btnPause').disabled = !S.running;
+  },
+  refresh() {
+    const P = S.preset;
+    S.sides.forEach((s, i) => {
+      let h = 0, inj = 0, arm = 0, un = 0;
+      for (const u of S.units) if (!u.dead && u.side === i) { if (u.injured) inj++; else h++; if (u.armed) arm++; else un++; }
+      const dead = S.stats[i].killed;
+      s.el.querySelector('.counts').innerHTML = [['Healthy', h], ['Injured', inj], ['Dead', dead], ['Armed', arm], ['Unarmed', un]].map(([l, v]) => `<div><b>${v}</b>${l}</div>`).join('');
+      s.el.querySelector('.men').textContent = `${s.count} spheres planned ≈ ${fmt(s.count * P.scale)} men · on field now ≈ ${fmt((h + inj) * P.scale)}`;
+    });
+    const c = simClock();
+    $('clockDate').textContent = c.full;
+    $('clockPhase').textContent = `${S.phase.name}${P.phases.length > 1 ? ` (phase ${S.phaseIdx + 1}/${P.phases.length})` : ''} · ${S.ended ? 'ended' : S.running ? 'running' : S.started ? 'paused' : 'ready — press Start'}`;
+    if (UI.logDirty) {
+      UI.logDirty = false;
+      $('log').innerHTML = S.log.map(e => `<div class="${e.cls || ''}"><time>${esc(e.time)}</time>${esc(e.text)}</div>`).join('');
+    }
+    UI.tooltip();
+  },
+  tooltip() {
+    const u = S.selected || S.hover, tip = $('tip');
+    if (!u) { tip.style.display = 'none'; return; }
+    const T = u.T, cell = S.terrain.at(u.x, u.y), s = worldToScreen(u.x, u.y), r = view.getBoundingClientRect();
+    tip.innerHTML = `<b style="color:${S.sides[u.side].color}">${esc(S.sides[u.side].name)}</b><br>${esc(u.group.label)}<br>
+      <span class="small">${esc(T.label)}</span><br>
+      Status: <b>${u.status}</b> · health ${Math.max(0, Math.round(u.health))}<br>
+      Weapon: ${u.armed ? `armed · ammo ${u.ammo}/${T.ammo}` : 'unarmed'}<br>
+      Morale: ${Math.round(clamp(u.morale, 0, 100))}${u.routing ? ' · <b>routing</b>' : ''}<br>
+      Accuracy ${T.accuracy} · range ${T.range} · fires every ${T.fireInterval}s<br>
+      ${u.dead ? '' : `Order: ${esc(u.order || '—')}<br>`}Terrain: ${esc(cell.name)} (cover ${Math.round(cell.cover * 100)}%)`;
+    tip.style.display = 'block';
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    tip.style.left = clamp(s.x + 14, 4, r.width - tw - 4) + 'px';
+    tip.style.top = clamp(s.y + 14, 4, r.height - th - 4) + 'px';
+  },
+};
+
+function showBanner(title, sub) {
+  $('bannerTitle').textContent = title; $('bannerSub').textContent = sub;
+  const b = $('banner'); b.classList.add('show'); clearTimeout(showBanner.t); showBanner.t = setTimeout(() => b.classList.remove('show'), 3200);
+}
+
+function showSummary() {
+  const P = S.preset, H = P.historical, sc = P.scale;
+  const rows = S.sides.map((s, i) => {
+    const st = S.stats[i], h = H && H.casualties.find(c => c.side === i);
+    const simTot = (st.killed + st.wounded) * sc;
+    const hTot = h ? (h.killed || 0) + (h.wounded || 0) + (h.missing || 0) : null;
+    return `<tr><td><b style="color:${s.color}">${esc(s.name)}</b><br><span class="small">${fmt(st.spawned * sc)} committed in sim</span></td>
+      <td>${fmt(st.killed * sc)}${h ? `<br><span class="small">hist. ${fmt(h.killed)}</span>` : ''}</td>
+      <td>${fmt(st.wounded * sc)}${h ? `<br><span class="small">hist. ${h.wounded == null ? 'n/a' : fmt(h.wounded)}</span>` : ''}</td>
+      <td>${h ? `<span class="small">hist. ${fmt(h.missing)} ${h.missingLabel || 'missing'}</span>` : '—'}</td>
+      <td>${fmt(simTot)}${h ? `<br><span class="small">hist. ${fmt(hTot)}</span>` : ''}<br><span class="small">${Math.round(100 * (st.killed + st.wounded) / Math.max(1, st.spawned))}% of sim force</span></td></tr>`;
+  }).join('');
+  const notes = H ? H.casualties.map(c => `<li>${esc(S.sides[c.side].name)}: ${esc(c.src)}${c.note ? ` — ${esc(c.note)}` : ''}</li>`).join('') : '';
+  $('modalCard').innerHTML = `<h2>${esc(P.name)} — result</h2><div class="small">${esc(P.date)}</div>
+    <p><b>Simulation:</b> ${esc(S.endReason || '')}</p>
+    ${H ? `<p><b>History:</b> ${esc(H.outcome)}</p>` : ''}
+    <table><tr><th>Side</th><th>Killed</th><th>Wounded</th><th>Missing / captured</th><th>Total</th></tr>${rows}</table>
+    <p class="small">Simulated figures are spheres × ${sc} (1 sphere = ${sc} soldiers). "Wounded" counts soldiers injured and still alive at the end of their phase. Missing and captured soldiers are not modeled. Unit stats are tuned gameplay values, so expect the simulation to land near the historical figures without matching them.</p>
+    ${notes ? `<p class="small"><b>Sources for historical figures:</b></p><ul class="small">${notes}</ul>` : ''}
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button id="mReplay">Replay</button><button class="primary" id="mClose">Close</button></div>`;
+  $('modal').style.display = 'flex';
+  $('mClose').onclick = () => { $('modal').style.display = 'none'; };
+  $('mReplay').onclick = () => { resetBattle(); };
+}
+
+/* ---------- controls ---------- */
+$('preset').innerHTML = PRESETS.map(p => `<option value="${p.id}">${esc(p.name)}${p.date && p.historical ? ` (${esc(p.date)})` : ''}</option>`).join('');
+$('preset').onchange = e => loadPreset(e.target.value);
+$('btnStart').onclick = () => { if (S.ended) return; S.started = true; S.running = true; UI.updateButtons(); };
+$('btnPause').onclick = () => { S.running = false; UI.updateButtons(); };
+$('btnReset').onclick = () => resetBattle();
+$('speed').oninput = e => { S.speed = +e.target.value; $('speedVal').textContent = S.speed + '×'; };
+const bindToggle = (id, key) => { $(id).onchange = e => { S.toggles[key] = e.target.checked; if (key === 'effects' && !e.target.checked) { S.fx.particles = []; S.fx.tracers = []; } }; };
+bindToggle('tEffects', 'effects'); bindToggle('tTerritory', 'territory'); bindToggle('tHeat', 'heat'); bindToggle('tTrails', 'trails'); bindToggle('tLabels', 'labels'); bindToggle('tFollow', 'follow');
+$('paintMode').onchange = e => view.classList.toggle('paint', e.target.checked);
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); if (S.running) $('btnPause').click(); else $('btnStart').click(); }
+});
+const zoomAt = (sx, sy, f) => {
+  const before = screenToWorld(sx, sy);
+  S.cam.z = clamp(S.cam.z * f, 0.15, 8);
+  const after = screenToWorld(sx, sy);
+  S.cam.x += before.x - after.x; S.cam.y += before.y - after.y; S.camTarget = null;
+};
+$('zIn').onclick = () => { const r = view.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, 1.3); };
+$('zOut').onclick = () => { const r = view.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, 1 / 1.3); };
+$('zFit').onclick = () => { S.camTarget = fitView([0, 0, S.preset.world.w, S.preset.world.h]); };
+
+/* ---------- camera pan / zoom / pick / paint ---------- */
+const pointers = new Map(); let drag = null, pinch = null, moved = false, paintTimer = 0;
+function pick(sx, sy) {
+  const w = screenToWorld(sx, sy), r = Math.max(8, 10 / S.cam.z);
+  let best = null, bd = r;
+  for (const u of S.units) { if (u.dead) continue; const d = Math.hypot(u.x - w.x, u.y - w.y); if (d < bd) { bd = d; best = u; } }
+  if (!best) for (const u of S.dead) { const d = Math.hypot(u.x - w.x, u.y - w.y); if (d < bd * 0.6) { bd = d; best = u; } }
+  return best;
+}
+function paintAt(sx, sy) {
+  const w = screenToWorld(sx, sy), tr = S.terrain, key = $('paintType').value, R = +$('brush').value * tr.C * 0.75;
+  for (let y = w.y - R; y <= w.y + R; y += tr.C / 2) for (let x = w.x - R; x <= w.x + R; x += tr.C / 2) {
+    if (x < 0 || y < 0 || x >= tr.w || y >= tr.h || Math.hypot(x - w.x, y - w.y) > R) continue;
+    const i = tr.idx(x, y); tr.setCell(i, key); S.baseType[i] = tr.type[i]; S.baseElev[i] = tr.elev[i];
+  }
+  const now = performance.now();
+  if (now - paintTimer > 120) { paintTimer = now; buildTerrainCanvas(); }
+}
+view.addEventListener('pointerdown', e => {
+  view.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, v2(e.offsetX, e.offsetY)); moved = false; S.camTarget = null;
+  if (pointers.size === 1) { drag = { x: e.offsetX, y: e.offsetY, cx: S.cam.x, cy: S.cam.y }; if ($('paintMode').checked) paintAt(e.offsetX, e.offsetY); }
+  else if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: S.cam.z }; drag = null; }
+});
+view.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) { S.hover = pick(e.offsetX, e.offsetY); return; }
+  pointers.set(e.pointerId, v2(e.offsetX, e.offsetY));
+  if (pinch && pointers.size === 2) {
+    const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+    zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, (pinch.z * d / pinch.d) / S.cam.z); moved = true; return;
+  }
+  if (!drag) return;
+  if (Math.hypot(e.offsetX - drag.x, e.offsetY - drag.y) > 4) moved = true;
+  if ($('paintMode').checked) { paintAt(e.offsetX, e.offsetY); return; }
+  S.cam.x = drag.cx - (e.offsetX - drag.x) / S.cam.z; S.cam.y = drag.cy - (e.offsetY - drag.y) / S.cam.z;
+});
+const endPointer = e => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if ($('paintMode').checked && drag) { buildTerrainCanvas(); buildStatics(); scanCells(); UI.buildLegend(); }
+  else if (!moved && !pinch) S.selected = pick(e.offsetX, e.offsetY);
+  if (pointers.size < 2) pinch = null;
+  drag = null;
+};
+view.addEventListener('pointerup', endPointer);
+view.addEventListener('pointercancel', endPointer);
+view.addEventListener('pointerleave', () => { S.hover = null; });
+view.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+new ResizeObserver(() => resizeView()).observe(view);
+
+/* =====================================================================
+   16. MAIN LOOP
+   ===================================================================== */
+let lastTs = performance.now(), acc = 0, lastUI = 0;
+function frame(ts) {
+  const dt = Math.min(0.1, (ts - lastTs) / 1000); lastTs = ts;
+  if (S.running) {
+    acc += dt * 1000 * S.speed;
+    let steps = 0;
+    while (acc >= CONFIG.STEP && steps < CONFIG.MAX_STEPS_PER_FRAME && S.running) { simStep(); acc -= CONFIG.STEP; steps++; }
+    if (steps >= CONFIG.MAX_STEPS_PER_FRAME) acc = 0;
+  }
+  if (S.camTarget) {
+    const k = 1 - Math.pow(0.02, dt);
+    S.cam.x += (S.camTarget.x - S.cam.x) * k; S.cam.y += (S.camTarget.y - S.cam.y) * k; S.cam.z += (S.camTarget.z - S.cam.z) * k;
+    if (Math.abs(S.camTarget.z - S.cam.z) < 0.002 && Math.hypot(S.camTarget.x - S.cam.x, S.camTarget.y - S.cam.y) < 1) S.camTarget = null;
+  }
+  render();
+  if (ts - lastUI > 250) { lastUI = ts; UI.refresh(); }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- boot ---------- */
+resizeView();
+const hashArgs = new URLSearchParams(location.hash.slice(1));
+const bootId = hashArgs.get('preset') || PRESETS[0].id;
+$('preset').value = bootId;
+loadPreset(bootId);
+if (hashArgs.has('speed')) { S.speed = +hashArgs.get('speed'); $('speed').value = S.speed; $('speedVal').textContent = S.speed + '×'; }
+if (hashArgs.has('auto')) $('btnStart').click();
+if (hashArgs.has('ff')) { // test hook: #preset=id&ff=seconds fast-forwards synchronously and reports stats
+  S.started = S.running = true; const t0 = performance.now();
+  const target = +hashArgs.get('ff') * 60;
+  for (let i = 0; i < target && !S.ended; i++) simStep();
+  const ms = performance.now() - t0;
+  document.title = 'FF ' + JSON.stringify({ t: S.t.toFixed(1), phase: S.phaseIdx, ended: S.ended, msPerStep: (ms / Math.max(1, S.stepCount)).toFixed(2),
+    units: S.units.length, stats: S.stats.map(s => [s.spawned, s.killed, s.wounded]), reason: S.endReason, log: S.log.slice(0, 12).map(l => l.time + ' ' + l.text) });
+  S.running = false;
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
